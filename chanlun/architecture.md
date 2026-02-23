@@ -1,849 +1,923 @@
-# 缠论股票技术分析系统 - 软件架构设计文档
+# 缠论 Invester - AI-Native MCP 架构设计文档
 
 **项目名称:** 缠论 Invester (ChanLun Invester)  
-**版本:** v1.0  
+**版本:** v2.0 (AI-Native MCP Edition)  
 **基于:** 缠中说禅"教你炒股票"108 课  
-**文档状态:** 初稿  
-**创建日期:** 2026-02-22
+**架构模式:** AI-Native + MCP (Model Context Protocol)  
+**创建日期:** 2026-02-22  
+**更新日期:** 2026-02-22
 
 ---
 
 ## 目录
 
-1. [系统概述](#1-系统概述)
-2. [架构概览](#2-架构概览)
+1. [架构愿景](#1-架构愿景)
+2. [MCP 架构概览](#2-mcp 架构概览)
 3. [核心模块设计](#3-核心模块设计)
-4. [数据层设计](#4-数据层设计)
-5. [API 设计](#5-api 设计)
-6. [技术栈选型](#6-技术栈选型)
-7. [部署架构](#7-部署架构)
-8. [安全与性能](#8-安全与性能)
-9. [开发路线图](#9-开发路线图)
+4. [AI Agent 系统](#4-ai-agent 系统)
+5. [订阅与配额管理](#5-订阅与配额管理)
+6. [数据层设计](#6-数据层设计)
+7. [API 与 MCP 工具](#7-api 与 mcp 工具)
+8. [技术栈选型](#8-技术栈选型)
+9. [部署架构](#9-部署架构)
+10. [开发路线图](#10-开发路线图)
 
 ---
 
-## 1. 系统概述
+## 1. 架构愿景
 
-### 1.1 项目背景
+### 1.1 从"工具"到"平台"的演进
 
-缠论 Invester 是一个基于缠中说禅"教你炒股票"108 课理论的股票技术分析系统。系统通过纯几何化的方法，对市场走势进行严格分类和当下判断，帮助投资者识别买卖点、控制风险。
+**chanlun-pro (传统工具):**
+```
+用户 → GUI 界面 → 单体应用 → 数据库
+```
 
-### 1.2 核心功能
+**ChanLun Invester (AI-Native 平台):**
+```
+用户/AI Agent → MCP 协议 → 微服务集群 → 多模态数据
+```
 
-- **走势自动分析**: 自动识别分型、笔、线段、中枢
-- **买卖点提示**: 实时识别三类买卖点并发出信号
-- **背驰检测**: 多级别背驰自动判断
-- **多周期联立**: 支持 1 分钟至月线的多级别分析
-- **风险预警**: 走势从"能搞"变"不能搞"时立即预警
+### 1.2 核心设计理念
 
-### 1.3 设计原则
+1. **AI-Native First** - 为 AI Agent 设计，而非仅为人类用户
+2. **MCP Protocol** - 基于 Model Context Protocol 的标准化接口
+3. **Composable** - 可组合的工具和服务
+4. **Scalable** - 从单机到集群的无缝扩展
+5. **Monetizable** - 内建订阅和配额管理
 
-1. **100% 符合缠论原文**: 所有算法严格遵循 108 课定义
-2. **当下性**: 不做预测，只做当下分类和判断
-3. **精确性**: 几何化定义，无歧义
-4. **可扩展性**: 支持后续功能扩展和算法优化
+### 1.3 使用场景
+
+#### 场景 1: 散户投资者 (自然语言交互)
+```
+用户： "帮我看看 000001 现在有什么买卖点"
+    ↓
+AI Agent → MCP: query_buy_sell_points(symbol="000001.SZ")
+    ↓
+返回： "30 分钟级别第二类买点形成于 14:30，价格 16.23 元"
+```
+
+#### 场景 2: 量化开发者 (API 集成)
+```python
+from mcp_client import MCPClient
+
+client = MCPClient()
+bsp = await client.call_tool("query_buy_sell_points", {
+    "symbol": "000001.SZ",
+    "level": "30m",
+    "type": ["buy1", "buy2", "buy3"]
+})
+```
+
+#### 场景 3: 机构客户 (私有化部署)
+```
+内部系统 → MCP Gateway → 本地 ChanLun 服务
+                  ↓
+            数据隔离 + 定制开发
+```
 
 ---
 
-## 2. 架构概览
+## 2. MCP 架构概览
 
-### 2.1 系统架构图
+### 2.1 整体架构图
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    用户界面层 (UI)                        │
-│  ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌─────────┐ │
-│  │ K 线图展示  │ │ 买卖点标记 │ │ 多周期切换 │ │ 预警中心 │ │
-│  └───────────┘ └───────────┘ └───────────┘ └─────────┘ │
-└─────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────┐
-│                    应用服务层 (Application)               │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────────┐   │
-│  │ 走势分析服务 │ │ 买卖点服务  │ │ 风险预警服务    │   │
-│  └─────────────┘ └─────────────┘ └─────────────────┘   │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────────┐   │
-│  │ 多周期联立  │ │ 区间套定位  │ │ 中枢震荡监控    │   │
-│  └─────────────┘ └─────────────┘ └─────────────────┘   │
-└─────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────┐
-│                    核心引擎层 (Core Engine)               │
-│  ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌─────────┐ │
-│  │ 包含处理   │ │ 分型识别   │ │ 笔划分     │ │ 线段划分 │ │
-│  └───────────┘ └───────────┘ └───────────┘ └─────────┘ │
-│  ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌─────────┐ │
-│  │ 中枢识别   │ │ 背驰判断   │ │ 买卖点识别 │ │ 力度比较 │ │
-│  └───────────┘ └───────────┘ └───────────┘ └─────────┘ │
-└─────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────┐
-│                    数据访问层 (Data Access)               │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────────┐   │
-│  │ K 线数据仓库 │ │ 指标数据仓  │ │ 分析结果缓存    │   │
-│  └─────────────┘ └─────────────┘ └─────────────────┘   │
-└─────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────┐
-│                    数据源层 (Data Source)                 │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────────┐   │
-│  │ 股票行情 API │ │ 指数数据 API│ │ 财务数据 API    │   │
-│  └─────────────┘ └─────────────┘ └─────────────────┘   │
-└─────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                        客户端层 (Clients)                        │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌───────────┐ │
+│  │ Web App     │ │ Mobile App  │ │ CLI/SDK     │ │ AI Agents │ │
+│  │ (React)     │ │ (Flutter)   │ │ (Python)    │ │ (LLM)     │ │
+│  └─────────────┘ └─────────────┘ └─────────────┘ └───────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              │ MCP Protocol (JSON-RPC over WebSocket/HTTP)
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│                      MCP Gateway (入口网关)                       │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌───────────┐ │
+│  │ 身份验证     │ │ 配额检查     │ │ 限流控制     │ │ 路由转发  │ │
+│  │ (JWT/OAuth) │ │ (Redis)     │ │ (Token Bucket)│ │ (gRPC)   │ │
+│  └─────────────┘ └─────────────┘ └─────────────┘ └───────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              │ gRPC (内部通信)
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│                     MCP Server 集群                               │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │              MCP Tools (标准化接口)                      │   │
+│  │  ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌─────────┐ │   │
+│  │  │ 行情数据   │ │ 走势分析   │ │ 买卖点     │ │ 预警订阅 │ │   │
+│  │  │ klines    │ │ analyze   │ │ bsp       │ │ alerts  │ │   │
+│  │  └───────────┘ └───────────┘ └───────────┘ └─────────┘ │   │
+│  │  ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌─────────┐ │   │
+│  │  │ 策略回测   │ │ 实盘交易   │ │ 风险监控   │ │ 用户管理 │ │   │
+│  │  │ backtest  │ │ trade     │ │ risk      │ │ user    │ │   │
+│  │  └───────────┘ └───────────┘ └───────────┘ └─────────┘ │   │
+│  └─────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│                      AI Agent 系统                               │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌───────────┐ │
+│  │ 分析 Agent   │ │ 监控 Agent   │ │ 交易 Agent   │ │ 学习 Agent │ │
+│  │ (Analysis)  │ │ (Monitor)   │ │ (Trading)   │ │ (Learning)│ │
+│  └─────────────┘ └─────────────┘ └─────────────┘ └───────────┘ │
+│                                                                       │
+│  每个 Agent 可通过 MCP 调用工具，也可与其他 Agent 协作                    │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│                      核心引擎层                                  │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌───────────┐ │
+│  │ Rust 引擎   │ │ Python 服务 │ │ 算法库       │ │ 缓存层    │ │
+│  │ (高性能)    │ │ (业务逻辑)  │ │ (缠论算法)  │ │ (Redis)   │ │
+│  └─────────────┘ └─────────────┘ └─────────────┘ └───────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│                      数据层                                      │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌───────────┐ │
+│  │ PostgreSQL  │ │ ClickHouse  │ │ Redis       │ │ S3        │ │
+│  │ (业务数据)  │ │ (时序数据)  │ │ (缓存)      │ │ (文件)    │ │
+│  └─────────────┘ └─────────────┘ └─────────────┘ └───────────┘ │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-### 2.2 技术架构分层
+### 2.2 MCP 协议设计
 
-| 层级 | 职责 | 技术选型 |
-|------|------|----------|
-| 表现层 | 图表展示、交互 | React/Vue + TradingView/ECharts |
-| 应用层 | 业务逻辑、服务编排 | Node.js/Python FastAPI |
-| 引擎层 | 核心算法 | Rust/C++ (高性能计算) |
-| 数据层 | 数据存储、缓存 | PostgreSQL + Redis + ClickHouse |
-| 基础设施 | 部署、监控 | Docker + Kubernetes + Prometheus |
+**基于 JSON-RPC 2.0 over WebSocket/HTTP:**
+
+```json
+// 请求
+{
+  "jsonrpc": "2.0",
+  "id": "req-001",
+  "method": "tools/call",
+  "params": {
+    "name": "query_buy_sell_points",
+    "arguments": {
+      "symbol": "000001.SZ",
+      "level": "30m",
+      "type": ["buy1", "buy2", "buy3"]
+    }
+  }
+}
+
+// 响应
+{
+  "jsonrpc": "2.0",
+  "id": "req-001",
+  "result": {
+    "content": [
+      {
+        "type": "buy2",
+        "price": 16.23,
+        "time": "2026-02-22T14:30:00Z",
+        "confirmed": true
+      }
+    ],
+    "isError": false
+  }
+}
+```
+
+### 2.3 MCP 工具清单
+
+| 工具名称 | 功能 | 配额影响 |
+|----------|------|----------|
+| `get_klines` | 获取 K 线数据 | 计入 API 调用 |
+| `analyze_structure` | 走势结构分析 | 计入分析次数 |
+| `query_buy_sell_points` | 查询买卖点 | **计入预警配额** |
+| `subscribe_alert` | 订阅价格/买卖点预警 | 计入监控股票数 |
+| `backtest_strategy` | 策略回测 | 计入回测次数 |
+| `execute_trade` | 实盘交易 (仅企业版) | - |
+| `get_user_quota` | 查询用户配额状态 | 免费 |
+| `list_tools` | 列出可用工具 | 免费 |
 
 ---
 
 ## 3. 核心模块设计
 
-### 3.1 包含处理模块 (Containment Processor)
+### 3.1 MCP Gateway
 
-**职责:** 处理 K 线包含关系，为后续分型判断做准备
+**职责:** 请求入口、身份验证、配额检查、限流、路由
 
-**输入:** 原始 K 线序列 (Open, High, Low, Close)  
-**输出:** 处理后无包含关系的 K 线序列
+**技术栈:** Node.js + Fastify + Redis
 
-**算法流程:**
+```typescript
+// MCP Gateway 核心逻辑
+interface MCPGateway {
+  // 身份验证
+  authenticate(token: string): Promise<User>;
+  
+  // 配额检查
+  checkQuota(user: User, tool: string): Promise<QuotaStatus>;
+  
+  // 限流
+  rateLimit(user: User): Promise<void>;
+  
+  // 路由到 MCP Server
+  route(request: MCPRequest, server: MCPServer): Promise<MCPResponse>;
+  
+  // 记录使用
+  recordUsage(user: User, tool: string, cost: number): Promise<void>;
+}
+```
+
+**中间件链:**
+```
+Request → Authentication → Rate Limit → Quota Check → Logging → Route → Response
+```
+
+### 3.2 MCP Server
+
+**职责:** MCP 工具实现、业务逻辑、协调核心引擎
+
+**技术栈:** Python FastAPI + gRPC
+
 ```python
-def process_containment(klines, direction):
-    """
-    direction: 'up' (向上) 或 'down' (向下)
-    """
-    processed = [klines[0]]
+class MCPServer:
+    def __init__(self):
+        self.tools = {
+            "query_buy_sell_points": self.query_bsp,
+            "subscribe_alert": self.subscribe_alert,
+            "get_klines": self.get_klines,
+            # ... 其他工具
+        }
     
-    for i in range(1, len(klines)):
-        prev = processed[-1]
-        curr = klines[i]
+    async def call_tool(self, name: str, arguments: dict) -> MCPResult:
+        if name not in self.tools:
+            raise ToolNotFoundError(f"Tool {name} not found")
         
-        # 判断包含关系
-        if is_contained(prev, curr):
-            if direction == 'up':
-                # 向上：取高高、低高
-                merged = {
-                    'high': max(prev['high'], curr['high']),
-                    'low': max(prev['low'], curr['low'])
-                }
-            else:
-                # 向下：取低低、高低
-                merged = {
-                    'high': min(prev['high'], curr['high']),
-                    'low': min(prev['low'], curr['low'])
-                }
-            processed[-1] = merged
-        else:
-            # 更新方向
-            direction = 'up' if curr['high'] > prev['high'] else 'down'
-            processed.append(curr)
+        tool_func = self.tools[name]
+        return await tool_func(**arguments)
     
-    return processed
+    async def query_bsp(self, symbol: str, level: str, type: List[str]) -> MCPResult:
+        # 调用核心引擎
+        result = await self.engine.query_buy_sell_points(symbol, level, type)
+        return MCPResult(content=result)
 ```
 
-**接口定义:**
-```typescript
-interface ContainmentProcessor {
-  process(klines: KLine[], direction?: Direction): ProcessedKLine[];
-  getDirection(klines: KLine[]): Direction;
+### 3.3 核心引擎 (Rust)
+
+**职责:** 高性能缠论算法计算
+
+**技术栈:** Rust + PyO3 (Python 绑定)
+
+```rust
+// Rust 核心引擎接口
+#[pyclass]
+pub struct ChanLunEngine {
+    // 引擎配置
+    config: EngineConfig,
+}
+
+#[pymethods]
+impl ChanLunEngine {
+    // 计算分型、笔、线段
+    pub fn analyze_structure(&self, klines: Vec<KLine>) -> AnalysisResult {
+        // 并行计算
+        let fractals = self.detect_fractals(&klines);
+        let strokes = self.divide_strokes(&fractals);
+        let segments = self.divide_segments(&strokes);
+        
+        AnalysisResult {
+            fractals,
+            strokes,
+            segments,
+        }
+    }
+    
+    // 识别中枢
+    pub fn identify_centers(&self, segments: Vec<Segment>) -> Vec<Center> {
+        segments.par_iter()  // 并行迭代
+            .map(|s| self.compute_center(s))
+            .collect()
+    }
+    
+    // 背驰检测
+    pub fn detect_divergence(&self, segment_a: &Segment, segment_b: &Segment) -> DivergenceResult {
+        // MACD 力度比较
+        let macd_area_a = self.calculate_macd_area(segment_a);
+        let macd_area_b = self.calculate_macd_area(segment_b);
+        
+        DivergenceResult {
+            has_divergence: macd_area_b < macd_area_a * 0.8,
+            confidence: self.calculate_confidence(segment_a, segment_b),
+        }
+    }
 }
 ```
 
-### 3.2 分型识别模块 (Fractal Detector)
+### 3.4 AI Agent 系统
 
-**职责:** 识别顶分型和底分型
+**职责:** 智能交互、多 Agent 协作、自然语言理解
 
-**输入:** 处理后的 K 线序列  
-**输出:** 分型列表 (类型、位置、高低点)
+**技术栈:** LangChain + LLM (GPT-4/Claude/本地模型)
 
-**算法流程:**
 ```python
-def detect_fractals(klines):
-    fractals = []
-    
-    for i in range(1, len(klines) - 1):
-        prev = klines[i - 1]
-        curr = klines[i]
-        next_k = klines[i + 1]
+class ChanLunAgent:
+    def __init__(self, mcp_client: MCPClient):
+        self.mcp = mcp_client
+        self.tools = self._load_mcp_tools()
         
-        # 顶分型判断
-        if (curr['high'] > prev['high'] and curr['high'] > next_k['high'] and
-            curr['low'] > prev['low'] and curr['low'] > next_k['low']):
-            fractals.append({
-                'type': 'top',
-                'index': i,
-                'high': curr['high'],
-                'low': curr['low'],
-                'time': curr['time']
-            })
+    async def chat(self, user_message: str) -> str:
+        # 1. 理解用户意图
+        intent = await self.llm.parse_intent(user_message)
         
-        # 底分型判断
-        elif (curr['low'] < prev['low'] and curr['low'] < next_k['low'] and
-              curr['high'] < prev['high'] and curr['high'] < next_k['high']):
-            fractals.append({
-                'type': 'bottom',
-                'index': i,
-                'high': curr['high'],
-                'low': curr['low'],
-                'time': curr['time']
-            })
-    
-    return fractals
-```
-
-**接口定义:**
-```typescript
-interface FractalDetector {
-  detect(klines: ProcessedKLine[]): Fractal[];
-  getTopFractals(): Fractal[];
-  getBottomFractals(): Fractal[];
-  validateFractal(fractal: Fractal, klines: ProcessedKLine[]): boolean;
-}
-```
-
-### 3.3 笔划分模块 (Stroke Divider)
-
-**职责:** 根据分型划分笔
-
-**输入:** 分型列表  
-**输出:** 笔列表 (起点、终点、方向)
-
-**笔的成立条件 (新定义):**
-1. 顶分型与底分型经过包含处理后，不允许共用 K 线
-2. 顶分型中最高 K 线和底分型的最低 K 线之间 (不包括这两 K 线)，不考虑包含关系，至少有 3 根 (包括 3 根) 以上 K 线
-
-**算法流程:**
-```python
-def divide_strokes(fractals):
-    strokes = []
-    
-    # 交替取顶和底
-    i = 0
-    while i < len(fractals) - 1:
-        start = fractals[i]
+        # 2. 选择合适的 MCP 工具
+        tool_name = self._select_tool(intent)
         
-        # 寻找下一个相反类型的分型
-        j = i + 1
-        while j < len(fractals):
-            end = fractals[j]
-            
-            # 检查是否符合笔的条件
-            if is_valid_stroke(start, end, fractals):
-                stroke = {
-                    'start': start,
-                    'end': end,
-                    'direction': 'up' if end['type'] == 'top' else 'down',
-                    'kline_count': count_klines_between(start, end)
-                }
-                strokes.append(stroke)
-                i = j
-                break
-            
-            j += 1
+        # 3. 调用 MCP 工具
+        result = await self.mcp.call_tool(tool_name, intent.args)
         
-        if j >= len(fractals):
-            break
-    
-    return strokes
-```
-
-**接口定义:**
-```typescript
-interface StrokeDivider {
-  divide(fractals: Fractal[]): Stroke[];
-  isValidStroke(start: Fractal, end: Fractal): boolean;
-  getLastStroke(strokes: Stroke[]): Stroke | null;
-}
-```
-
-### 3.4 线段划分模块 (Segment Divider)
-
-**职责:** 根据特征序列划分线段
-
-**输入:** 笔列表  
-**输出:** 线段列表
-
-**线段划分标准:**
-1. 线段至少由三笔组成
-2. 使用特征序列判断线段结束
-3. 两种情况:
-   - **第一种情况:** 特征序列分型无缺口，分型成立即线段结束
-   - **第二种情况:** 特征序列分型有缺口，需要后续分型确认
-
-**数据结构:**
-```typescript
-interface Segment {
-  id: string;
-  strokes: Stroke[];
-  direction: 'up' | 'down';
-  high: number;
-  low: number;
-  startTime: number;
-  endTime: number;
-  featureSequence: FeatureElement[];
-  isConfirmed: boolean;
-}
-
-interface FeatureElement {
-  high: number;
-  low: number;
-  index: number;
-}
-```
-
-**接口定义:**
-```typescript
-interface SegmentDivider {
-  divide(strokes: Stroke[]): Segment[];
-  detectSegmentEnd(pendingSegment: Segment, currentStroke: Stroke): boolean;
-  processFeatureSequence(strokes: Stroke[]): FeatureElement[];
-}
-```
-
-### 3.5 中枢识别模块 (Center Identifier)
-
-**职责:** 识别各级别中枢
-
-**输入:** 线段列表  
-**输出:** 中枢列表
-
-**中枢定义:** 某级别走势类型中，被至少三个连续次级别走势类型所重叠的部分
-
-**算法流程:**
-```python
-def identify_centers(segments):
-    centers = []
-    
-    i = 0
-    while i < len(segments) - 2:
-        # 检查连续三段是否有重叠
-        seg1 = segments[i]
-        seg2 = segments[i + 1]
-        seg3 = segments[i + 2]
+        # 4. 生成自然语言回复
+        response = await self.llm.generate_response(user_message, result)
         
-        # 计算重叠区间
-        overlap_start = max(seg1.low, seg2.low, seg3.low)
-        overlap_end = min(seg1.high, seg2.high, seg3.high)
-        
-        if overlap_start < overlap_end:
-            # 继续检查后续线段是否仍在中枢内
-            j = i + 3
-            while j < len(segments):
-                seg = segments[j]
-                if seg.high > overlap_start and seg.low < overlap_end:
-                    j += 1
-                else:
-                    break
-            
-            center = {
-                'segments': segments[i:j],
-                'zg': overlap_end,  # 中枢高点
-                'zd': overlap_start,  # 中枢低点
-                'level': determine_level(segments[i:j]),
-                'startTime': segments[i].startTime,
-                'endTime': segments[j-1].endTime
-            }
-            centers.append(center)
-            i = j
-        else:
-            i += 1
+        return response
+
+# 多 Agent 协作
+class MultiAgentSystem:
+    def __init__(self):
+        self.agents = {
+            "analyst": AnalysisAgent(),
+            "monitor": MonitorAgent(),
+            "trader": TradingAgent(),
+            "learner": LearningAgent(),
+        }
     
-    return centers
-```
-
-**接口定义:**
-```typescript
-interface CenterIdentifier {
-  identify(segments: Segment[]): Center[];
-  getCenterLevel(center: Center): Level;
-  isCenterCompleted(center: Center): boolean;
-  getThirdBuyPoint(center: Center): BuyPoint | null;
-}
-```
-
-### 3.6 背驰判断模块 (Divergence Detector)
-
-**职责:** 判断趋势背驰和盘整背驰
-
-**输入:** 走势段、MACD 数据  
-**输出:** 背驰判断结果
-
-**判断标准:**
-1. 两段同向趋势
-2. MACD 柱子面积比较
-3. MACD 黄白线回拉 0 轴
-4. 结合中枢判断
-
-**接口定义:**
-```typescript
-interface DivergenceDetector {
-  detectTrendDivergence(segmentA: Segment, segmentB: Segment, macd: MACDData): DivergenceResult;
-  detectCenterDivergence(center: Center, leaveSegment: Segment, returnSegment: Segment): DivergenceResult;
-  calculateMACDArea(macd: MACDData, start: number, end: number): number;
-  isHuangBaiLineBackToZero(macd: MACDData): boolean;
-}
-
-interface DivergenceResult {
-  hasDivergence: boolean;
-  type: 'trend' | 'center';
-  level: Level;
-  confidence: number;  // 0-1
-  macdAreaA: number;
-  macdAreaB: number;
-  priceCompare: {
-    segmentA: { high: number; low: number };
-    segmentB: { high: number; low: number };
-  };
-}
-```
-
-### 3.7 买卖点识别模块 (Buy/Sell Point Identifier)
-
-**职责:** 识别三类买卖点
-
-**买卖点定义:**
-
-| 类型 | 买点 | 卖点 |
-|------|------|------|
-| 第一类 | 趋势背驰点 | 趋势顶背驰点 |
-| 第二类 | 次级别回踩不破前低 | 次级别反弹不破前高 |
-| 第三类 | 次级别回踩不破中枢 | 次级别反弹不破中枢 |
-
-**接口定义:**
-```typescript
-interface BuySellPointIdentifier {
-  identifyAllBuySellPoints(segments: Segment[], centers: Center[]): BuySellPoint[];
-  identifyFirstBuyPoint(divergence: DivergenceResult): BuySellPoint | null;
-  identifySecondBuyPoint(firstBuyPoint: BuySellPoint, strokes: Stroke[]): BuySellPoint | null;
-  identifyThirdBuyPoint(center: Center, leaveSegment: Segment, returnSegment: Segment): BuySellPoint | null;
-}
-
-interface BuySellPoint {
-  type: 'buy1' | 'buy2' | 'buy3' | 'sell1' | 'sell2' | 'sell3';
-  price: number;
-  time: number;
-  level: Level;
-  center?: Center;
-  divergence?: DivergenceResult;
-  isConfirmed: boolean;
-  riskRewardRatio?: number;
-}
-```
-
-### 3.8 区间套定位模块 (Interval Set Locator)
-
-**职责:** 通过多级别区间套精确定位买卖点
-
-**算法流程:**
-```
-大级别背驰段
-    ↓
-次级别背驰段 (在次级别图中找)
-    ↓
-次次级别背驰段
-    ↓
-...
-    ↓
-最低级别背驰段 (1 分钟或笔级别)
-```
-
-**接口定义:**
-```typescript
-interface IntervalSetLocator {
-  locatePrecisePoint(largeLevelDivergence: DivergenceResult, 
-                     levelChain: Level[]): PrecisePoint;
-  getLevelChain(baseLevel: Level): Level[];
-}
-
-interface PrecisePoint {
-  price: number;
-  time: number;
-  level: Level;
-  confidence: number;
-  range: {
-    min: number;
-    max: number;
-  };
-}
+    async def collaborate(self, task: str) -> str:
+        # 任务分解
+        subtasks = await self.planner.decompose(task)
+        
+        # 分配给不同 Agent
+        results = await asyncio.gather(
+            *[self.agents[sub.agent].execute(sub.task) for sub in subtasks]
+        )
+        
+        # 汇总结果
+        return await self.synthesizer.synthesize(results)
 ```
 
 ---
 
-## 4. 数据层设计
+## 4. AI Agent 系统
 
-### 4.1 数据模型
+### 4.1 Agent 类型
 
-#### K 线数据表 (klines)
-```sql
-CREATE TABLE klines (
-    id              BIGSERIAL PRIMARY KEY,
-    symbol          VARCHAR(20) NOT NULL,
-    level           VARCHAR(10) NOT NULL,  -- 1m, 5m, 30m, 1d, 1w, 1M
-    open_time       TIMESTAMP NOT NULL,
-    close_time      TIMESTAMP NOT NULL,
-    open            DECIMAL(18, 4) NOT NULL,
-    high            DECIMAL(18, 4) NOT NULL,
-    low             DECIMAL(18, 4) NOT NULL,
-    close           DECIMAL(18, 4) NOT NULL,
-    volume          DECIMAL(18, 4) NOT NULL,
-    amount          DECIMAL(18, 4),
-    trade_count     INTEGER,
-    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    UNIQUE(symbol, level, open_time)
-);
+| Agent | 职责 | MCP 工具使用 |
+|-------|------|-------------|
+| **分析 Agent** | 走势分解、买卖点识别 | `analyze_structure`, `query_bsp` |
+| **监控 Agent** | 实时监控、预警推送 | `subscribe_alert`, `get_market_status` |
+| **交易 Agent** | 策略执行、订单管理 | `execute_trade`, `get_position` |
+| **学习 Agent** | 回测优化、策略迭代 | `backtest_strategy`, `get_performance` |
 
-CREATE INDEX idx_klines_symbol_level_time ON klines(symbol, level, open_time);
+### 4.2 Agent 协作流程
+
+```
+用户请求: "帮我找到所有 30 分钟级别形成第二类买点的股票，并回测的策略"
+    ↓
+Planner Agent: 分解为 3 个子任务
+    ↓
+1. 分析 Agent: 扫描全市场，找出 30 分钟 buy2 的股票列表
+2. 学习 Agent: 对这些股票进行历史回测
+3. 监控 Agent: 设置价格预警
+    ↓
+Synthesizer Agent: 汇总结果，生成报告
+    ↓
+返回用户：股票列表 + 回测结果 + 预警设置确认
 ```
 
-#### 分型数据表 (fractals)
+### 4.3 Agent 配置
+
+```yaml
+agents:
+  analyst:
+    model: claude-3-opus
+    tools:
+      - analyze_structure
+      - query_buy_sell_points
+      - get_klines
+    quota:
+      max_requests_per_hour: 100
+  
+  monitor:
+    model: gpt-4-turbo
+    tools:
+      - subscribe_alert
+      - get_market_status
+    quota:
+      max_active_alerts: 50
+  
+  trader:
+    model: claude-3-sonnet
+    tools:
+      - execute_trade
+      - get_position
+      - cancel_order
+    quota:
+      max_trades_per_day: 100
+    security:
+      require_confirmation: true
+```
+
+---
+
+## 5. 订阅与配额管理
+
+### 5.1 订阅层级
+
 ```sql
-CREATE TABLE fractals (
-    id              BIGSERIAL PRIMARY KEY,
-    symbol          VARCHAR(20) NOT NULL,
-    level           VARCHAR(10) NOT NULL,
-    type            VARCHAR(10) NOT NULL,  -- top, bottom
-    kline_index     INTEGER NOT NULL,
-    high            DECIMAL(18, 4) NOT NULL,
-    low             DECIMAL(18, 4) NOT NULL,
-    time            TIMESTAMP NOT NULL,
-    is_confirmed    BOOLEAN DEFAULT true,
+CREATE TYPE subscription_plan AS ENUM ('free', 'pro', 'developer', 'enterprise');
+
+CREATE TABLE subscriptions (
+    id              UUID PRIMARY KEY,
+    user_id         UUID NOT NULL REFERENCES users(id),
+    plan            subscription_plan NOT NULL,
+    status          VARCHAR(20) NOT NULL,
+    current_period_start TIMESTAMP,
+    current_period_end   TIMESTAMP,
+    cancel_at_period_end BOOLEAN DEFAULT false,
+    stripe_subscription_id VARCHAR(100),
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 ```
 
-#### 笔数据表 (strokes)
-```sql
-CREATE TABLE strokes (
-    id                  BIGSERIAL PRIMARY KEY,
-    symbol              VARCHAR(20) NOT NULL,
-    level               VARCHAR(10) NOT NULL,
-    direction           VARCHAR(10) NOT NULL,  -- up, down
-    start_fractal_id    BIGINT REFERENCES fractals(id),
-    end_fractal_id      BIGINT REFERENCES fractals(id),
-    start_time          TIMESTAMP NOT NULL,
-    end_time            TIMESTAMP NOT NULL,
-    start_price         DECIMAL(18, 4) NOT NULL,
-    end_price           DECIMAL(18, 4) NOT NULL,
-    kline_count         INTEGER NOT NULL,
-    is_confirmed        BOOLEAN DEFAULT true,
-    created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+### 5.2 配额定义
+
+```yaml
+quota_config:
+  free:
+    bsp_query:
+      limit: 3
+      period: month
+    alert_subscription:
+      limit: 5
+      period: permanent
+    api_call:
+      limit: 1000
+      period: day
+    backtest:
+      limit: 0
+      period: month
+  
+  pro:
+    bsp_query:
+      limit: -1  # -1 = unlimited
+      period: month
+    alert_subscription:
+      limit: 50
+      period: permanent
+    api_call:
+      limit: 10000
+      period: day
+    backtest:
+      limit: 10
+      period: month
+  
+  developer:
+    bsp_query:
+      limit: -1
+      period: month
+    alert_subscription:
+      limit: 100
+      period: permanent
+    api_call:
+      limit: 50000
+      period: day
+    backtest:
+      limit: 100
+      period: month
+  
+  enterprise:
+    bsp_query:
+      limit: -1
+    alert_subscription:
+      limit: -1
+    api_call:
+      limit: -1
+    backtest:
+      limit: -1
 ```
 
-#### 线段数据表 (segments)
-```sql
-CREATE TABLE segments (
-    id                  BIGSERIAL PRIMARY KEY,
-    symbol              VARCHAR(20) NOT NULL,
-    level               VARCHAR(10) NOT NULL,
-    direction           VARCHAR(10) NOT NULL,
-    start_stroke_id     BIGINT REFERENCES strokes(id),
-    end_stroke_id       BIGINT REFERENCES strokes(id),
-    stroke_count        INTEGER NOT NULL,
-    high                DECIMAL(18, 4) NOT NULL,
-    low                 DECIMAL(18, 4) NOT NULL,
-    start_time          TIMESTAMP NOT NULL,
-    end_time            TIMESTAMP NOT NULL,
-    is_confirmed        BOOLEAN DEFAULT true,
-    feature_sequence    JSONB,  -- 特征序列
-    created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+### 5.3 配额检查中间件
+
+```python
+from fastapi import Request, HTTPException
+from functools import wraps
+
+async def quota_check(tool_name: str):
+    """MCP 工具配额检查装饰器"""
+    
+    async def middleware(request: Request, call_next):
+        # 获取用户
+        user = request.state.user
+        
+        # 获取配额配置
+        quota_config = await get_quota_config(user.plan, tool_name)
+        
+        # -1 表示无限
+        if quota_config.limit == -1:
+            return await call_next(request)
+        
+        # 检查已用额度
+        used = await get_usage_count(user.id, tool_name, quota_config.period)
+        
+        if used >= quota_config.limit:
+            raise HTTPException(
+                status_code=429,
+                detail={
+                    "error": "quota_exceeded",
+                    "tool": tool_name,
+                    "used": used,
+                    "limit": quota_config.limit,
+                    "period": quota_config.period,
+                    "upgrade_url": "/billing/upgrade"
+                }
+            )
+        
+        # 执行请求
+        response = await call_next(request)
+        
+        # 记录使用
+        await increment_usage(user.id, tool_name)
+        
+        return response
+    
+    return middleware
 ```
 
-#### 中枢数据表 (centers)
-```sql
-CREATE TABLE centers (
-    id                  BIGSERIAL PRIMARY KEY,
-    symbol              VARCHAR(20) NOT NULL,
-    level               VARCHAR(10) NOT NULL,
-    zg                  DECIMAL(18, 4) NOT NULL,  -- 中枢高点
-    zd                  DECIMAL(18, 4) NOT NULL,  -- 中枢低点
-    gg                  DECIMAL(18, 4),  -- 最高
-    dd                  DECIMAL(18, 4),  -- 最低
-    segment_ids         BIGINT[] NOT NULL,
-    start_time          TIMESTAMP NOT NULL,
-    end_time            TIMESTAMP,
-    status              VARCHAR(20) DEFAULT 'forming',  -- forming, completed, extended
-    created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+### 5.4 使用统计
+
+```python
+class UsageTracker:
+    async def record(self, user_id: str, tool: str, cost: int = 1):
+        """记录工具使用"""
+        await redis.incrby(f"usage:{user_id}:{tool}:current", cost)
+        await redis.incr(f"usage:{user_id}:{tool}:total")
+        
+        # 写入数据库 (异步)
+        await db.execute(
+            "INSERT INTO usage_logs (user_id, tool, cost) VALUES ($1, $2, $3)",
+            user_id, tool, cost
+        )
+    
+    async def get_remaining(self, user_id: str, tool: str) -> int:
+        """获取剩余配额"""
+        plan = await get_user_plan(user_id)
+        limit = get_quota_limit(plan, tool)
+        
+        if limit == -1:
+            return -1  # unlimited
+        
+        used = await redis.get(f"usage:{user_id}:{tool}:current")
+        return limit - (used or 0)
 ```
 
-#### 买卖点数据表 (buy_sell_points)
+---
+
+## 6. 数据层设计
+
+### 6.1 数据库 Schema
+
 ```sql
+-- K 线数据表 (ClickHouse)
+CREATE TABLE klines (
+    symbol      String,
+    level       String,
+    time        DateTime,
+    open        Decimal64(4),
+    high        Decimal64(4),
+    low         Decimal64(4),
+    close       Decimal64(4),
+    volume      Decimal64(4),
+    amount      Decimal64(4),
+    
+    INDEX idx_symbol_time (symbol, time)
+) ENGINE = MergeTree()
+PARTITION BY toYYYYMM(time)
+ORDER BY (symbol, level, time);
+
+-- 分析结果表 (PostgreSQL)
+CREATE TABLE analysis_results (
+    id              UUID PRIMARY KEY,
+    symbol          VARCHAR(20) NOT NULL,
+    level           VARCHAR(10) NOT NULL,
+    analysis_type   VARCHAR(50) NOT NULL,  -- fractals, strokes, segments, centers
+    result          JSONB NOT NULL,
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at      TIMESTAMP,
+    
+    INDEX idx_symbol_level (symbol, level),
+    INDEX idx_created (created_at)
+);
+
+-- 买卖点表
 CREATE TABLE buy_sell_points (
-    id                  BIGSERIAL PRIMARY KEY,
-    symbol              VARCHAR(20) NOT NULL,
-    type                VARCHAR(10) NOT NULL,  -- buy1, buy2, buy3, sell1, sell2, sell3
-    price               DECIMAL(18, 4) NOT NULL,
-    time                TIMESTAMP NOT NULL,
-    level               VARCHAR(10) NOT NULL,
-    center_id           BIGINT REFERENCES centers(id),
-    divergence_id       BIGINT,
-    is_confirmed        BOOLEAN DEFAULT false,
-    risk_reward_ratio   DECIMAL(5, 2),
-    created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    id              UUID PRIMARY KEY,
+    symbol          VARCHAR(20) NOT NULL,
+    type            VARCHAR(10) NOT NULL,  -- buy1, buy2, buy3, sell1, sell2, sell3
+    price           DECIMAL(18, 4) NOT NULL,
+    time            TIMESTAMP NOT NULL,
+    level           VARCHAR(10) NOT NULL,
+    center_id       UUID REFERENCES centers(id),
+    is_confirmed    BOOLEAN DEFAULT false,
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 用户订阅表
+CREATE TABLE subscriptions (
+    id              UUID PRIMARY KEY,
+    user_id         UUID NOT NULL REFERENCES users(id),
+    plan            VARCHAR(20) NOT NULL,
+    status          VARCHAR(20) NOT NULL,
+    current_period_start  TIMESTAMP,
+    current_period_end    TIMESTAMP,
+    stripe_id       VARCHAR(100),
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 使用配额表
+CREATE TABLE usage_quotas (
+    id              UUID PRIMARY KEY,
+    user_id         UUID NOT NULL,
+    quota_type      VARCHAR(50) NOT NULL,
+    used_count      INTEGER DEFAULT 0,
+    limit_count     INTEGER,
+    reset_date      TIMESTAMP,
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    UNIQUE(user_id, quota_type)
 );
 ```
 
-### 4.2 缓存设计
+### 6.2 缓存策略
 
-**Redis 缓存结构:**
+```yaml
+cache_config:
+  klines:
+    backend: redis
+    ttl: 300  # 5 分钟
+    key_pattern: "klines:{symbol}:{level}"
+  
+  analysis:
+    backend: redis
+    ttl: 3600  # 1 小时
+    key_pattern: "analysis:{symbol}:{level}:{type}"
+  
+  user_quota:
+    backend: redis
+    ttl: 60  # 1 分钟
+    key_pattern: "quota:{user_id}"
 ```
-# K 线数据缓存
-klines:{symbol}:{level} -> sorted set (score=timestamp, value=json)
 
-# 分析结果缓存
-analysis:{symbol}:{level}:fractals -> list
-analysis:{symbol}:{level}:strokes -> list
-analysis:{symbol}:{level}:segments -> list
-analysis:{symbol}:{level}:centers -> list
-analysis:{symbol}:bsp -> sorted set (score=timestamp)
+### 6.3 数据流
 
-# 实时提醒
-alerts:{user_id} -> list
 ```
-
-### 4.3 数据存储策略
-
-| 数据类型 | 存储方案 | 保留周期 |
-|----------|----------|----------|
-| 1 分钟 K 线 | ClickHouse | 3 个月 |
-| 5/30 分钟 K 线 | ClickHouse | 1 年 |
-| 日/周/月 K 线 | PostgreSQL | 永久 |
-| 分析结果 | Redis + PostgreSQL | 永久 |
-| 实时行情 | Redis | 当天 |
+实时行情 → Kafka → Stream Processor → ClickHouse
+                                    ↓
+                              Analysis Engine
+                                    ↓
+                              Redis Cache
+                                    ↓
+                              PostgreSQL (结果)
+```
 
 ---
 
-## 5. API 设计
+## 7. API 与 MCP 工具
 
-### 5.1 RESTful API
+### 7.1 MCP 工具定义
 
-#### 行情数据 API
+```typescript
+// MCP Tool Schema
+interface MCPTool {
+  name: string;
+  description: string;
+  inputSchema: {
+    type: "object";
+    properties: Record<string, {
+      type: string;
+      description: string;
+      required?: boolean;
+    }>;
+  };
+  quotaCost?: number;
+}
+
+// 工具注册
+const tools: MCPTool[] = [
+  {
+    name: "query_buy_sell_points",
+    description: "查询指定股票的买卖点信息",
+    inputSchema: {
+      type: "object",
+      properties: {
+        symbol: {
+          type: "string",
+          description: "股票代码，如 000001.SZ"
+        },
+        level: {
+          type: "string",
+          description: "分析级别：1m, 5m, 30m, 1d, 1w, 1M",
+          enum: ["1m", "5m", "30m", "1d", "1w", "1M"]
+        },
+        type: {
+          type: "array",
+          items: { type: "string", enum: ["buy1", "buy2", "buy3", "sell1", "sell2", "sell3"] },
+          description: "买卖点类型"
+        }
+      }
+    },
+    quotaCost: 1  // 消耗 1 次买卖点查询配额
+  },
+  {
+    name: "get_klines",
+    description: "获取 K 线数据",
+    inputSchema: {
+      type: "object",
+      properties: {
+        symbol: { type: "string" },
+        level: { type: "string" },
+        start: { type: "string", format: "date-time" },
+        end: { type: "string", format: "date-time" },
+        limit: { type: "integer", maximum: 10000 }
+      }
+    },
+    quotaCost: 1  // 消耗 1 次 API 调用配额
+  },
+  // ... 其他工具
+];
 ```
-GET /api/v1/klines
-  ?symbol=000001.SZ
-  &level=1m
-  &start=2024-01-01T00:00:00Z
-  &end=2024-01-01T23:59:59Z
-  &limit=1000
 
-Response:
-{
-  "data": [
-    {
-      "time": "2024-01-01T09:30:00Z",
-      "open": 10.5,
-      "high": 10.8,
-      "low": 10.3,
-      "close": 10.6,
-      "volume": 1000000
+### 7.2 REST API
+
+```yaml
+openapi: 3.0.0
+info:
+  title: ChanLun Invester API
+  version: 2.0.0
+
+paths:
+  /api/v2/mcp/tools:
+    get:
+      summary: 列出可用 MCP 工具
+      operationId: listTools
+      security:
+        - BearerAuth: []
+      responses:
+        200:
+          description: 工具列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MCPTool'
+  
+  /api/v2/mcp/tools/call:
+    post:
+      summary: 调用 MCP 工具
+      operationId: callTool
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MCPCallRequest'
+      responses:
+        200:
+          description: 工具执行结果
+        429:
+          description: 配额超限
+  
+  /api/v2/user/quota:
+    get:
+      summary: 查询用户配额状态
+      operationId: getUserQuota
+      security:
+        - BearerAuth: []
+      responses:
+        200:
+          description: 配额状态
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuotaStatus'
+```
+
+### 7.3 WebSocket 实时推送
+
+```typescript
+// WebSocket 连接
+const ws = new WebSocket("wss://api.chanlun-invester.com/mcp");
+
+// 订阅买卖点预警
+ws.send(JSON.stringify({
+  jsonrpc: "2.0",
+  method: "subscribe",
+  params: {
+    channel: "buy_sell_points",
+    filter: {
+      symbol: "000001.SZ",
+      type: ["buy1", "buy2", "buy3"]
     }
-  ]
-}
-```
-
-#### 走势分析 API
-```
-GET /api/v1/analysis/{symbol}
-  ?level=30m
-  &include=fractals,strokes,segments,centers,bsp
-
-Response:
-{
-  "symbol": "000001.SZ",
-  "level": "30m",
-  "updateTime": "2024-01-01T15:00:00Z",
-  "fractals": [...],
-  "strokes": [...],
-  "segments": [...],
-  "centers": [...],
-  "buySellPoints": [...],
-  "trend": {
-    "direction": "up",
-    "strength": 0.75
   }
-}
-```
+}));
 
-#### 买卖点信号 API
-```
-GET /api/v1/signals/bsp
-  ?symbol=000001.SZ
-  &type=buy1,buy2,buy3
-  &status=unconfirmed,confirmed
-  &since=2024-01-01T00:00:00Z
-
-Response:
-{
-  "signals": [
-    {
-      "id": "bsp-001",
-      "symbol": "000001.SZ",
-      "type": "buy2",
-      "price": 15.67,
-      "time": "2024-01-01T10:30:00Z",
-      "level": "30m",
-      "isConfirmed": true,
-      "description": "30 分钟级别第二类买点，次级别回踩不破前低"
-    }
-  ]
-}
-```
-
-#### 预警订阅 API
-```
-POST /api/v1/alerts/subscribe
-Content-Type: application/json
-
-{
-  "userId": "user-123",
-  "symbol": "000001.SZ",
-  "alertTypes": ["buy1", "buy2", "buy3", "divergence"],
-  "channels": ["websocket", "email", "telegram"],
-  "level": "30m"
-}
-
-Response:
-{
-  "subscriptionId": "sub-456",
-  "status": "active"
-}
-```
-
-### 5.2 WebSocket API
-
-#### 实时行情推送
-```
-WS /ws/v1/market
-
-Client → Server:
-{
-  "action": "subscribe",
-  "channel": "klines",
-  "params": {
-    "symbol": "000001.SZ",
-    "level": "1m"
+// 接收推送
+ws.onmessage = (event) => {
+  const message = JSON.parse(event.data);
+  if (message.method === "buy_sell_points/alert") {
+    console.log("新买卖点:", message.params.data);
   }
-}
-
-Server → Client:
-{
-  "channel": "klines",
-  "data": {
-    "symbol": "000001.SZ",
-    "level": "1m",
-    "kline": {...}
-  }
-}
-```
-
-#### 买卖点实时推送
-```
-Server → Client:
-{
-  "channel": "bsp",
-  "data": {
-    "symbol": "000001.SZ",
-    "type": "buy1",
-    "price": 16.23,
-    "time": "2024-01-01T14:35:00Z",
-    "urgency": "high",
-    "message": "1 分钟级别第一类买点，趋势底背驰形成"
-  }
-}
+};
 ```
 
 ---
 
-## 6. 技术栈选型
+## 8. 技术栈选型
 
-### 6.1 核心引擎 (高性能计算)
+### 8.1 完整技术栈
 
-| 组件 | 技术选型 | 说明 |
-|------|----------|------|
-| 算法实现 | Rust | 高性能、内存安全、并发友好 |
-| 数值计算 | ndarray + Blas | 矩阵运算、统计分析 |
-| 时间序列 | arrow | 高效时间序列处理 |
+| 层级 | 组件 | 技术选型 |
+|------|------|----------|
+| **客户端** | Web App | React 18 + TypeScript + TradingView |
+| | Mobile App | Flutter (iOS/Android) |
+| | SDK | Python + TypeScript |
+| **网关** | MCP Gateway | Node.js 20 + Fastify |
+| | 认证 | JWT + OAuth2 |
+| | 限流 | Redis Token Bucket |
+| **服务层** | MCP Server | Python 3.11 + FastAPI |
+| | AI Agent | LangChain + Claude/GPT-4 |
+| | 任务队列 | Celery + Redis |
+| **引擎层** | 核心算法 | Rust 1.75 + PyO3 |
+| | 数值计算 | ndarray + Blas |
+| **数据层** | 关系数据库 | PostgreSQL 15 |
+| | 时序数据库 | ClickHouse 23 |
+| | 缓存 | Redis 7 Cluster |
+| | 对象存储 | MinIO / S3 |
+| **基础设施** | 容器化 | Docker + Kubernetes |
+| | 服务网格 | Istio |
+| | 监控 | Prometheus + Grafana |
+| | 日志 | ELK Stack |
+| | CI/CD | GitHub Actions + ArgoCD |
 
-### 6.2 后端服务
+### 8.2 成本估算 (月)
 
-| 组件 | 技术选型 | 说明 |
-|------|----------|------|
-| Web 框架 | FastAPI (Python) | 高性能、异步、自动生成文档 |
-| 任务队列 | Celery + Redis | 异步任务处理 |
-| API 网关 | Kong / Traefik | 路由、限流、认证 |
-
-### 6.3 数据存储
-
-| 组件 | 技术选型 | 说明 |
-|------|----------|------|
-| 时序数据 | ClickHouse | 高压缩、快速查询 |
-| 关系数据 | PostgreSQL 15 | 事务支持、JSONB |
-| 缓存 | Redis 7 | 低延迟、数据结构丰富 |
-
-### 6.4 前端
-
-| 组件 | 技术选型 | 说明 |
-|------|----------|------|
-| 框架 | React 18 + TypeScript | 类型安全、生态丰富 |
-| 图表 | TradingView Lightweight Charts | 专业金融图表 |
-| 状态管理 | Zustand | 轻量、简单 |
-
-### 6.5 基础设施
-
-| 组件 | 技术选型 | 说明 |
-|------|----------|------|
-| 容器化 | Docker | 环境一致性 |
-| 编排 | Kubernetes | 自动扩缩容 |
-| 监控 | Prometheus + Grafana | 指标监控 |
-| 日志 | ELK Stack | 日志分析 |
+| 服务 | 配置 | 数量 | 单价 | 小计 |
+|------|------|------|------|------|
+| **Kubernetes** | 4 核 8GB | 5 | $80 | $400 |
+| **ClickHouse** | 8 核 16GB | 3 | $200 | $600 |
+| **PostgreSQL** | 4 核 8GB | 2 | $100 | $200 |
+| **Redis** | 2 核 4GB | 3 | $50 | $150 |
+| **存储** | 1TB SSD | 1 | $100 | $100 |
+| **带宽** | 1TB | 1 | $100 | $100 |
+| **合计** | - | - | - | **$1,550/月** |
 
 ---
 
-## 7. 部署架构
+## 9. 部署架构
 
-### 7.1 生产环境架构
+### 9.1 生产环境架构
 
 ```
                               ┌─────────────┐
-                              │   用户浏览器 │
+                              │   用户请求   │
                               └──────┬──────┘
                                      │
                               ┌──────▼──────┐
-                              │   CDN 静态资源│
-                              └─────────────┘
+                              │ CloudFlare  │
+                              │ (DDoS/CDN)  │
+                              └──────┬──────┘
                                      │
 ┌────────────────────────────────────▼────────────────────────────────────┐
-│                            Kubernetes 集群                               │
+│                         Kubernetes 集群 (AWS/GCP)                        │
 │                                                                         │
 │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐        │
-│  │  Ingress 控制器  │  │  API 网关 (Kong) │  │  WebSocket 网关  │        │
+│  │  Ingress (TLS)  │  │ MCP Gateway     │  │ WebSocket Gateway│        │
+│  │  ×3 副本         │  │ ×5 副本          │  │ ×3 副本           │        │
 │  └────────┬────────┘  └────────┬────────┘  └────────┬────────┘        │
 │           │                    │                    │                   │
 │  ┌────────▼────────────────────▼────────────────────▼────────┐        │
-│  │                    应用服务层 (Deployment)                 │        │
-│  │  ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌───────────┐ │        │
-│  │  │ API 服务   │ │ WebSocket  │ │ 任务调度  │ │ 告警服务  │ │        │
-│  │  │ ×3 副本    │ │ ×2 副本    │ │ ×2 副本    │ │ ×2 副本    │ │        │
-│  │  └───────────┘ └───────────┘ └───────────┘ └───────────┘ │        │
+│  │                    服务网格 (Istio)                        │        │
+│  └────────┬────────────────────┬────────────────────┬────────┘        │
+│           │                    │                    │                   │
+│  ┌────────▼────────┐  ┌────────▼────────┐  ┌────────▼────────┐        │
+│  │ MCP Server      │  │ AI Agent        │  │ 后台任务        │        │
+│  │ ×10 副本         │  │ ×5 副本          │  │ (Celery) ×5     │        │
+│  └────────┬────────┘  └────────┬────────┘  └────────┬────────┘        │
+│           │                    │                    │                   │
+│  ┌────────▼─────────────────────────────────────────▼────────┐        │
+│  │                    核心引擎 (Rust)                         │        │
+│  │                    ×10 副本                                │        │
 │  └───────────────────────────────────────────────────────────┘        │
-│                                                                         │
-│  ┌─────────▼─────────────────────────────────────┐                    │
-│  │            核心引擎层 (StatefulSet)            │                    │
-│  │  ┌───────────────┐  ┌───────────────┐        │                    │
-│  │  │ 分析引擎      │  │ 实时监控引擎   │        │                    │
-│  │  │ ×2 副本 (Rust)│  │ ×2 副本       │        │                    │
-│  │  └───────────────┘  └───────────────┘        │                    │
-│  └───────────────────────────────────────────────┘                    │
 │                                                                         │
 └─────────────────────────────────────────────────────────────────────────┘
                               │
@@ -851,134 +925,188 @@ Server → Client:
          │                    │                    │
 ┌────────▼────────┐  ┌────────▼────────┐  ┌────────▼────────┐
 │  PostgreSQL     │  │  ClickHouse     │  │  Redis Cluster  │
-│  (主从复制)     │  │  (分布式)       │  │  (哨兵模式)     │
+│  (主从 +PgBouncer)│  │  (分布式 3 节点)  │  │  (哨兵 3 节点)    │
 └─────────────────┘  └─────────────────┘  └─────────────────┘
 ```
 
-### 7.2 资源需求估算
+### 9.2 扩缩容策略
 
-| 组件 | CPU | 内存 | 存储 |
-|------|-----|------|------|
-| API 服务 (×3) | 2 核 | 4GB | - |
-| WebSocket (×2) | 2 核 | 4GB | - |
-| 分析引擎 (×2) | 4 核 | 8GB | - |
-| PostgreSQL | 4 核 | 16GB | 500GB SSD |
-| ClickHouse | 8 核 | 32GB | 2TB NVMe |
-| Redis | 2 核 | 8GB | - |
+```yaml
+# HPA (Horizontal Pod Autoscaler) 配置
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: mcp-server-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: mcp-server
+  minReplicas: 5
+  maxReplicas: 50
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 60
+```
 
-**总计:** ~40 核 CPU, ~120GB 内存，~2.5TB 存储
+### 9.3 多可用区部署
+
+```
+区域：us-east-1
+├── 可用区 A (主)
+│   ├── Kubernetes 节点 ×5
+│   ├── PostgreSQL 主库
+│   └── Redis 主节点
+├── 可用区 B (备)
+│   ├── Kubernetes 节点 ×3
+│   ├── PostgreSQL 从库
+│   └── Redis 从节点
+└── 可用区 C (备)
+    ├── Kubernetes 节点 ×2
+    └── ClickHouse 节点 ×3
+```
 
 ---
 
-## 8. 安全与性能
+## 10. 开发路线图
 
-### 8.1 安全设计
+### Phase 1: 基础架构 (4 周) ✅
 
-1. **API 认证:** JWT Token + OAuth2
-2. **传输加密:** TLS 1.3
-3. **数据脱敏:** 用户敏感信息加密存储
-4. **访问控制:** RBAC 权限模型
-5. **审计日志:** 所有操作记录可追溯
+- [x] MCP 协议定义
+- [x] 商业模式设计
+- [ ] MCP Gateway 实现
+- [ ] 基础 MCP 工具 (klines, analyze)
+- [ ] 用户认证系统
 
-### 8.2 性能优化
+### Phase 2: 核心功能 (6 周)
 
-1. **数据预计算:** 分型、笔、线段预先计算缓存
-2. **增量更新:** 新 K 线到来时增量更新分析结果
-3. **多级缓存:** 本地缓存 + Redis 缓存 + 数据库
-4. **并行计算:** Rust 引擎多线程并行处理
-5. **CDN 加速:** 静态资源和历史数据 CDN 分发
+- [ ] 缠论算法封装 (Rust → Python)
+- [ ] 买卖点识别工具
+- [ ] 订阅与配额系统
+- [ ] Stripe 支付集成
+- [ ] 免费版上线 MVP
 
-### 8.3 性能指标
+### Phase 3: AI Agent (6 周)
+
+- [ ] LangChain 集成
+- [ ] 分析 Agent 开发
+- [ ] 监控 Agent 开发
+- [ ] 自然语言接口
+- [ ] Pro 版发布
+
+### Phase 4: 高级功能 (8 周)
+
+- [ ] 回测框架
+- [ ] 数据下载模块
+- [ ] 预警系统 (WebSocket)
+- [ ] 监控 Agent 完善
+- [ ] Developer 版发布
+
+### Phase 5: 企业级 (8 周)
+
+- [ ] 私有化部署方案
+- [ ] 实盘交易接口
+- [ ] 机构 Dashboard
+- [ ] 专属支持体系
+- [ ] Enterprise 版发布
+
+### Phase 6: 生态建设 (持续)
+
+- [ ] SDK 完善 (Python/TS)
+- [ ] 开发者文档
+- [ ] 合作伙伴计划
+- [ ] 社区运营
+- [ ] 应用市场
+
+---
+
+## 11. 风险与缓解
+
+### 11.1 技术风险
+
+| 风险 | 影响 | 概率 | 缓解措施 |
+|------|------|------|----------|
+| Rust 引擎性能不达标 | 高 | 低 | 早期性能测试、优化热点 |
+| MCP 协议兼容性 | 中 | 中 | 严格遵循规范、版本管理 |
+| AI Agent 准确性 | 高 | 中 | 人工审核、置信度阈值 |
+
+### 11.2 商业风险
+
+| 风险 | 影响 | 概率 | 缓解措施 |
+|------|------|------|----------|
+| 获客成本过高 | 高 | 中 | 内容营销、社区运营 |
+| 付费转化率低 | 高 | 中 | 优化免费体验、限时优惠 |
+| 竞品价格战 | 中 | 低 | 差异化、技术优势 |
+
+### 11.3 合规风险
+
+| 风险 | 影响 | 概率 | 缓解措施 |
+|------|------|------|----------|
+| 投资建议资质 | 高 | 中 | 免责声明、不提供投资建议 |
+| 数据隐私 | 高 | 中 | GDPR 合规、数据加密 |
+| 支付合规 | 中 | 低 | 正规支付渠道、税务合规 |
+
+---
+
+## 12. 关键指标 (KPI)
+
+### 12.1 技术指标
 
 | 指标 | 目标值 |
 |------|--------|
 | API 响应时间 (P95) | < 100ms |
 | WebSocket 延迟 | < 50ms |
-| 买卖点识别延迟 | < 1 秒 |
 | 系统可用性 | 99.9% |
-| 数据准确性 | 100% (核心算法) |
+| 买卖点识别准确率 | > 85% (回测) |
+
+### 12.2 业务指标
+
+| 指标 | 第 1 年目标 |
+|------|------------|
+| 注册用户 | 10,000 |
+| 付费用户 | 200 (2% 转化) |
+| MRR | ¥40 万 |
+| 毛利率 | > 60% |
 
 ---
 
-## 9. 开发路线图
+## 总结
 
-### Phase 1: 核心算法验证 (4 周)
-- [ ] Rust 核心算法实现 (包含、分型、笔、线段)
-- [ ] 单元测试覆盖率 > 90%
-- [ ] 与手动标注数据对比验证
-- [ ] 性能基准测试
+### 架构优势
 
-### Phase 2: 数据层建设 (4 周)
-- [ ] 数据库 Schema 设计与实现
-- [ ] 历史 K 线数据导入
-- [ ] 缓存层实现
-- [ ] 数据同步工具
+1. **AI-Native** - 为 AI Agent 时代设计
+2. **MCP 标准化** - 易于集成和扩展
+3. **内建商业化** - 订阅和配额管理原生支持
+4. **高性能** - Rust 核心引擎
+5. **可扩展** - Kubernetes 微服务架构
 
-### Phase 3: 分析引擎开发 (6 周)
-- [ ] 中枢识别模块
-- [ ] 背驰判断模块
-- [ ] 买卖点识别模块
-- [ ] 区间套定位模块
-- [ ] API 服务实现
+### 下一步
 
-### Phase 4: 用户界面 (6 周)
-- [ ] K 线图表集成
-- [ ] 买卖点标记展示
-- [ ] 多周期切换
-- [ ] 预警通知功能
-- [ ] 用户配置管理
-
-### Phase 5: 测试与优化 (4 周)
-- [ ] 集成测试
-- [ ] 性能压力测试
-- [ ] 真实数据回测
-- [ ] Bug 修复与优化
-
-### Phase 6: 上线部署 (2 周)
-- [ ] 生产环境部署
-- [ ] 监控系统配置
-- [ ] 文档完善
-- [ ] 灰度发布
-
-**总周期:** 约 26 周 (6 个月)
-
----
-
-## 附录
-
-### A. 术语表
-
-| 术语 | 英文 | 定义 |
-|------|------|------|
-| 分型 | Fractal | 三 K 线组合，顶分型/底分型 |
-| 笔 | Stroke | 相邻顶底分型连接 |
-| 线段 | Segment | 至少三笔组成 |
-| 中枢 | Center | 三段次级别走势重叠部分 |
-| 背驰 | Divergence | 趋势力度衰竭 |
-| 买卖点 | Buy/Sell Point | 第一/二/三类买卖点 |
-
-### B. 参考资料
-
-- 缠中说禅"教你炒股票"108 课原文
-- chanlunskill.md (第 1-60 课总结)
-- chanlunskill-61-108.md (第 61-108 课总结)
-- GitHub: https://github.com/weisenchen/chanlunInvester
-
-### C. 更新日志
-
-| 版本 | 日期 | 更新内容 |
-|------|------|----------|
-| v1.0 | 2026-02-22 | 初稿完成 |
+1. **本周:** MCP Gateway 原型
+2. **下周:** 基础 MCP 工具实现
+3. **2 周后:** 免费版 MVP 上线
 
 ---
 
 **文档结束**
 
----
-
-**注意事项:**
-
-1. 本架构设计基于缠论 108 课理论，所有算法实现需严格遵循原文定义
-2. 系统不涉及具体的投资建议，仅提供技术分析工具
-3. 实际开发过程中可能需要根据技术验证结果调整架构
-4. 性能指标需在真实环境中持续监控和优化
+**最后更新:** 2026-02-22  
+**作者:** ChanLun Invester Team  
+**版本:** v2.0 (AI-Native MCP)
