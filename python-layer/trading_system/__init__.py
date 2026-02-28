@@ -4,20 +4,17 @@ Backup implementation and integration layer for Rust+Python hybrid trading syste
 """
 
 __version__ = "0.1.0"
-__author__ = "Weisen"
+__author__ = "Weisen Chen"
 
+# Python backup implementations
 from .kline import Kline, KlineSeries, TimeFrame
-from .pen import PenCalculator, Pen, PenDirection
-from .segment import SegmentCalculator
-from .indicators import MACD
+from .fractal import FractalDetector, Fractal, FractalType
 
 __all__ = [
     "Kline",
-    "KlineSeries",
+    "KlineSeries", 
     "TimeFrame",
-    "PenCalculator",
-    "Pen",
-    "PenDirection",
-    "SegmentCalculator",
-    "MACD",
+    "FractalDetector",
+    "Fractal",
+    "FractalType",
 ]
