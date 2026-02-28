@@ -1,0 +1,112 @@
+version: '3.8'
+
+# Production configuration with automatic failover
+services:
+  rust-engine:
+    build:
+      context: .
+      dockerfile: Dockerfile.rust
+    container_name: trading-rust-prod
+    ports:
+      - "50051:50051"
+    volumes:
+      - ./config:/app/config:ro
+      - trading-prod-data:/app/data
+      - trading-logs:/app/logs
+    environment:
+      - RUST_LOG=warn
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=50051
+      - CONFIG_PATH=/app/config/default.yaml
+    healthcheck:
+      test: ["CMD", "/app/trading-server", "--health-check"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    networks:
+      - trading-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 128M
+
+  python-engine:
+    build:
+      context: .
+      dockerfile: Dockerfile.python
+    container_name: trading-python-prod
+    ports:
+      - "50052:50052"
+    volumes:
+      - ./config:/app/config:ro
+      - trading-prod-data:/app/data
+      - trading-logs:/app/logs
+    environment:
+      - PYTHONUNBUFFERED=1
+      - CONFIG_PATH=/app/config/default.yaml
+    healthcheck:
+      test: ["CMD", "python", "-c", "import grpc; print('Healthy')"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    networks:
+      - trading-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 64M
+
+  # Automatic failover coordinator
+  failover-coordinator:
+    image: python:3.11-slim
+    container_name: trading-failover
+    volumes:
+      - ./scripts:/app/scripts
+      - ./config:/app/config:ro
+    working_dir: /app
+    command: >
+      python -c "
+      import asyncio, sys;
+      sys.path.append('/app/scripts');
+      from failover import coordinator;
+      asyncio.run(coordinator.run())
+      "
+    environment:
+      - RUST_URL=rust-engine:50051
+      - PYTHON_URL=python-engine:50052
+      - CHECK_INTERVAL=1
+      - MAX_FAILURES=3
+      - FAILOVER_ENABLED=true
+    depends_on:
+      rust-engine:
+        condition: service_healthy
+      python-engine:
+        condition: service_healthy
+    networks:
+      - trading-network
+    restart: always
+
+volumes:
+  trading-prod-data:
+    driver: local
+  trading-logs:
+    driver: local
+
+networks:
+  trading-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16

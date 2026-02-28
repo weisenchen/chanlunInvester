@@ -1,0 +1,37 @@
+# MACD Parameter Presets
+# Common MACD configurations for different trading styles
+
+# Standard MACD (default)
+standard:
+  fast_period: 12
+  slow_period: 26
+  signal_period: 9
+  description: "Classic MACD settings, good for general use"
+
+# Fast MACD (shorter timeframes)
+fast:
+  fast_period: 8
+  slow_period: 17
+  signal_period: 9
+  description: "More responsive, suitable for shorter timeframes (1m-15m)"
+
+# Slow MACD (longer timeframes)
+slow:
+  fast_period: 19
+  slow_period: 39
+  signal_period: 9
+  description: "Smoother signals, better for longer timeframes (1h+)"
+
+# Crypto MACD (24/7 markets)
+crypto:
+  fast_period: 12
+  slow_period: 26
+  signal_period: 9
+  description: "Standard settings optimized for crypto volatility"
+
+# Scalping MACD
+scalping:
+  fast_period: 6
+  slow_period: 13
+  signal_period: 5
+  description: "Very fast responses for scalping strategies"

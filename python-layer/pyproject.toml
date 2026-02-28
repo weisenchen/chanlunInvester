@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "trading-system"
+version = "0.1.0"
+description = "Python layer for Rust+Python hybrid trading system"
+authors = [
+    {name = "Weisen", email = "weisen@example.com"}
+]
+requires-python = ">=3.10"
+dependencies = [
+    "grpcio>=1.60.0",
+    "grpcio-tools>=1.60.0",
+    "numpy>=1.24.0",
+    "pandas>=2.0.0",
+    "ta-lib>=0.4.0",
+    "pyyaml>=6.0",
+    "asyncio>=3.4.3",
+    " aiohttp>=3.9.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "black>=23.0.0",
+    "mypy>=1.7.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["trading_system*"]

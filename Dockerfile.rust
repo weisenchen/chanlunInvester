@@ -1,0 +1,70 @@
+# Multi-stage Dockerfile for Rust Trading Service
+FROM rust:1.75-slim as builder
+
+WORKDIR /app
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    pkg-config \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy workspace manifests
+COPY Cargo.toml ./
+
+# Copy rust-core manifest
+COPY rust-core/Cargo.toml ./rust-core/
+
+# Create dummy source for caching
+RUN mkdir -p rust-core/src && \
+    echo "fn main() {}" > rust-core/src/main.rs && \
+    echo "pub fn lib() {}" > rust-core/src/lib.rs && \
+    mkdir -p rust-core/src/{kline,pen,segment,indicators,health,grpc} && \
+    touch rust-core/src/kline/mod.rs \
+          rust-core/src/pen/mod.rs \
+          rust-core/src/segment/mod.rs \
+          rust-core/src/indicators/mod.rs \
+          rust-core/src/health/mod.rs \
+          rust-core/src/grpc/mod.rs
+
+# Build dependencies (cached layer)
+RUN cargo build --release --manifest-path rust-core/Cargo.toml
+RUN rm -f rust-core/target/release/deps/trading_core*
+
+# Copy actual source code
+COPY rust-core/ ./rust-core/
+
+# Build the application
+WORKDIR /app/rust-core
+RUN cargo build --release
+
+# Runtime image
+FROM debian:bookworm-slim
+
+WORKDIR /app
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy binary from builder
+COPY --from=builder /app/rust-core/target/release/trading-server /app/trading-server
+
+# Copy configuration
+COPY config/ ./config/
+
+# Set environment variables
+ENV RUST_LOG=info
+ENV SERVER_HOST=0.0.0.0
+ENV SERVER_PORT=50051
+
+# Expose gRPC port
+EXPOSE 50051
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD ["/app/trading-server", "--health-check"]
+
+# Run the server
+CMD ["./trading-server"]
