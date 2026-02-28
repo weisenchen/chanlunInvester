@@ -32,21 +32,30 @@ async fn main() -> Result<()> {
     info!("Configuration loaded: {:?}", config);
 
     // Initialize health monitor
-    let health_monitor = health::HealthMonitor::new(&config).await?;
-    info!("Health monitor initialized");
+    let health_monitor = health::HealthMonitor::with_defaults();
+    info!("Health monitor initialized (active: {:?})", health_monitor.active_engine());
 
     // Start gRPC server
     let addr = format!("{}:{}", config.server.host, config.server.port).parse()?;
     info!("Starting gRPC server on {}", addr);
 
-    // TODO: Implement gRPC server startup
-    // grpc::start_server(addr, health_monitor).await?;
+    // Clone health monitor for gRPC server
+    let health_monitor_clone = health_monitor.clone();
+    
+    // Spawn gRPC server task
+    let server_handle = tokio::spawn(async move {
+        if let Err(e) = grpc::start_server(addr, health_monitor_clone).await {
+            error!("gRPC server error: {}", e);
+        }
+    });
 
     info!("Trading server started successfully");
     
     // Keep running
     tokio::signal::ctrl_c().await?;
     info!("Shutting down...");
+    
+    server_handle.abort();
 
     Ok(())
 }

@@ -20,6 +20,7 @@ serde_yaml = "0.9"
 # gRPC
 tonic = "0.10"
 prost = "0.12"
+tonic-build = "0.10"
 
 # Error handling
 thiserror = "1.0"

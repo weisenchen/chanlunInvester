@@ -35,6 +35,9 @@ config.workspace = true
 # Math/numerics
 ndarray = "0.15"
 
+[build-dependencies]
+tonic-build.workspace = true
+
 [dev-dependencies]
 criterion.workspace = true
 quickcheck.workspace = true
