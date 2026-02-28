@@ -1,0 +1,53 @@
+# Git Configuration for Trading System
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# Rust
+/target/
+**/*.rs.bk
+*.pdb
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Data
+*.csv
+*.json
+!config/*.json
+
+# Docker
+docker-compose.override.yml
+
+# Testing
+coverage/
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Temporary
+tmp/
+temp/
+*.tmp

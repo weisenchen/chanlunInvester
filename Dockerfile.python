@@ -1,0 +1,37 @@
+# Dockerfile for Python Trading Service (Backup)
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libta-lib-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy Python files
+COPY python-layer/ ./python-layer/
+COPY config/ ./config/
+
+# Set working directory
+WORKDIR /app/python-layer
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Install the package
+RUN pip install -e .
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV CONFIG_PATH=/app/config/default.yaml
+
+# Expose gRPC port (different from Rust to avoid conflicts)
+EXPOSE 50052
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python -c "import grpc; print('Healthy')"
+
+# Run the Python service
+CMD ["python", "-m", "trading_system.main"]

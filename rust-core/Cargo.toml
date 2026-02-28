@@ -1,0 +1,48 @@
+[package]
+name = "trading-core"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+# Async runtime
+tokio.workspace = true
+
+# Serialization
+serde.workspace = true
+serde_json.workspace = true
+serde_yaml.workspace = true
+
+# gRPC
+tonic.workspace = true
+prost.workspace = true
+
+# Error handling
+thiserror.workspace = true
+anyhow.workspace = true
+
+# Logging
+tracing.workspace = true
+tracing-subscriber.workspace = true
+
+# Time
+chrono.workspace = true
+
+# Configuration
+config.workspace = true
+
+# Math/numerics
+ndarray = "0.15"
+
+[dev-dependencies]
+criterion.workspace = true
+quickcheck.workspace = true
+
+[[bin]]
+name = "trading-server"
+path = "src/main.rs"
+
+[lib]
+name = "trading_core"
+path = "src/lib.rs"

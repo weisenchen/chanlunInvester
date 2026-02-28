@@ -1,0 +1,51 @@
+# Trading System Default Configuration
+
+system:
+  # Primary engine: rust | python
+  primary_engine: rust
+  # Enable automatic failover to backup engine
+  failover_enabled: true
+  # Health check interval in milliseconds
+  health_check_interval_ms: 1000
+
+# MACD Indicator Configuration
+macd:
+  fast_period: 12
+  slow_period: 26
+  signal_period: 9
+
+# Pen Theory Configuration
+pen:
+  # Definition type: new_3kline | traditional
+  definition: new_3kline
+  # Enable strict validation (no overlapping pens)
+  strict_validation: true
+  # Minimum K-lines between pen turning points
+  min_klines_between_turns: 3
+
+# Line Segment Configuration
+segment:
+  # Use strict feature sequence implementation
+  feature_sequence_strict: true
+  # Handle inclusion relationships (包含关系)
+  handle_inclusion: true
+
+# Health Monitoring Configuration
+health:
+  # Enable failover mechanism
+  failover_enabled: true
+  # Maximum consecutive failures before switchover
+  max_failures_before_switch: 3
+  # Timeout for health check responses (ms)
+  response_timeout_ms: 500
+
+# Server Configuration
+server:
+  host: 0.0.0.0
+  port: 50051
+
+# Logging Configuration
+logging:
+  level: info  # debug | info | warn | error
+  format: json  # json | text
+  output: stdout  # stdout | file

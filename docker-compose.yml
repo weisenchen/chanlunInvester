@@ -1,0 +1,91 @@
+version: '3.8'
+
+services:
+  # Rust trading engine (primary)
+  rust-engine:
+    build:
+      context: .
+      dockerfile: Dockerfile.rust
+    container_name: trading-rust
+    ports:
+      - "50051:50051"
+    volumes:
+      - ./config:/app/config:ro
+      - trading-data:/app/data
+    environment:
+      - RUST_LOG=info
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=50051
+      - CONFIG_PATH=/app/config/default.yaml
+    healthcheck:
+      test: ["CMD", "/app/trading-server", "--health-check"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - trading-network
+    restart: unless-stopped
+
+  # Python trading engine (backup)
+  python-engine:
+    build:
+      context: .
+      dockerfile: Dockerfile.python
+    container_name: trading-python
+    ports:
+      - "50052:50052"
+    volumes:
+      - ./config:/app/config:ro
+      - trading-data:/app/data
+    environment:
+      - PYTHONUNBUFFERED=1
+      - CONFIG_PATH=/app/config/default.yaml
+    healthcheck:
+      test: ["CMD", "python", "-c", "import grpc; print('Healthy')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - trading-network
+    restart: unless-stopped
+    profiles:
+      - backup  # Only start with --profile backup
+
+  # Health monitor and failover coordinator
+  health-monitor:
+    image: python:3.11-slim
+    container_name: trading-monitor
+    volumes:
+      - ./scripts:/app/scripts
+      - ./config:/app/config:ro
+    working_dir: /app
+    command: >
+      python -c "
+      import asyncio, sys, os;
+      sys.path.append('/app/scripts');
+      from health_check import monitor;
+      asyncio.run(monitor())
+      "
+    environment:
+      - RUST_URL=rust-engine:50051
+      - PYTHON_URL=python-engine:50052
+      - CHECK_INTERVAL=1
+    depends_on:
+      rust-engine:
+        condition: service_healthy
+      python-engine:
+        condition: service_healthy
+    networks:
+      - trading-network
+    profiles:
+      - monitor  # Optional monitoring service
+
+volumes:
+  trading-data:
+    driver: local
+
+networks:
+  trading-network:
+    driver: bridge

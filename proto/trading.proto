@@ -1,0 +1,180 @@
+// Trading System gRPC Service Definition
+// Protocol Buffers interface for Rust-Python communication
+
+syntax = "proto3";
+package trading;
+
+// K-line data structure
+message Kline {
+    int64 timestamp = 1;          // Unix timestamp (milliseconds)
+    double open = 2;
+    double high = 3;
+    double low = 4;
+    double close = 5;
+    double volume = 6;
+    optional double turnover = 7;
+}
+
+// Timeframe enumeration
+enum TimeFrame {
+    TIMEFRAME_UNSPECIFIED = 0;
+    TIMEFRAME_M1 = 1;             // 1 minute
+    TIMEFRAME_M3 = 2;             // 3 minutes
+    TIMEFRAME_M5 = 3;             // 5 minutes
+    TIMEFRAME_M15 = 4;            // 15 minutes
+    TIMEFRAME_M30 = 5;            // 30 minutes
+    TIMEFRAME_H1 = 6;             // 1 hour
+    TIMEFRAME_H4 = 7;             // 4 hours
+    TIMEFRAME_D1 = 8;             // 1 day
+    TIMEFRAME_W1 = 9;             // 1 week
+    TIMEFRAME_MN = 10;            // 1 month
+}
+
+// Pen direction
+enum PenDirection {
+    PEN_DIRECTION_UNSPECIFIED = 0;
+    PEN_DIRECTION_UP = 1;         // Upward pen
+    PEN_DIRECTION_DOWN = 2;       // Downward pen
+}
+
+// Pen structure
+message Pen {
+    PenDirection direction = 1;
+    int32 start_idx = 2;
+    int32 end_idx = 3;
+    double start_price = 4;
+    double end_price = 5;
+    bool confirmed = 6;
+}
+
+// Segment (线段) structure
+message Segment {
+    PenDirection direction = 1;
+    int32 start_idx = 2;
+    int32 end_idx = 3;
+    double start_price = 4;
+    double end_price = 5;
+    repeated Pen contained_pens = 6;  // Pens within this segment
+    bool confirmed = 7;
+}
+
+// MACD indicator values
+message MACD {
+    double macd_line = 1;         // MACD line (DIF)
+    double signal_line = 2;       // Signal line (DEA)
+    double histogram = 3;         // MACD histogram
+}
+
+// Health status
+enum HealthStatus {
+    HEALTH_STATUS_UNSPECIFIED = 0;
+    HEALTH_STATUS_HEALTHY = 1;
+    HEALTH_STATUS_DEGRADED = 2;
+    HEALTH_STATUS_UNHEALTHY = 3;
+}
+
+// ============ Requests ============
+
+// Submit K-line data
+message SubmitKlinesRequest {
+    string symbol = 1;
+    TimeFrame timeframe = 2;
+    repeated Kline klines = 3;
+}
+
+message SubmitKlinesResponse {
+    bool success = 1;
+    int32 processed_count = 2;
+    string error_message = 3;
+}
+
+// Calculate pens for a symbol
+message CalculatePensRequest {
+    string symbol = 1;
+    TimeFrame timeframe = 2;
+    int32 last_n = 3;             // Calculate for last N klines (0 = all)
+}
+
+message CalculatePensResponse {
+    bool success = 1;
+    repeated Pen pens = 2;
+    string error_message = 3;
+}
+
+// Calculate segments
+message CalculateSegmentsRequest {
+    string symbol = 1;
+    TimeFrame timeframe = 2;
+}
+
+message CalculateSegmentsResponse {
+    bool success = 1;
+    repeated Segment segments = 2;
+    string error_message = 3;
+}
+
+// Get MACD values
+message GetMACDRequest {
+    string symbol = 1;
+    TimeFrame timeframe = 2;
+    optional int32 fast_period = 3;
+    optional int32 slow_period = 4;
+    optional int32 signal_period = 5;
+}
+
+message GetMACDResponse {
+    bool success = 1;
+    MACD current = 2;
+    repeated MACD history = 3;
+    string error_message = 4;
+}
+
+// Health check
+message HealthCheckRequest {
+    string service = 1;           // "rust" | "python"
+}
+
+message HealthCheckResponse {
+    HealthStatus status = 1;
+    double latency_ms = 2;
+    string message = 3;
+}
+
+// Get system status
+message GetStatusRequest {
+}
+
+message GetStatusResponse {
+    bool success = 1;
+    string active_engine = 2;     // "rust" | "python"
+    bool failover_enabled = 3;
+    HealthStatus health = 4;
+    int32 symbols_tracked = 5;
+    int32 pens_calculated = 6;
+    int32 segments_calculated = 7;
+}
+
+// ============ Service Definition ============
+
+service TradingService {
+    // Submit K-line data for processing
+    rpc SubmitKlines(SubmitKlinesRequest) returns (SubmitKlinesResponse);
+    
+    // Calculate pens using pen theory
+    rpc CalculatePens(CalculatePensRequest) returns (CalculatePensResponse);
+    
+    // Calculate line segments
+    rpc CalculateSegments(CalculateSegmentsRequest) returns (CalculateSegmentsResponse);
+    
+    // Get MACD indicator values
+    rpc GetMACD(GetMACDRequest) returns (GetMACDResponse);
+    
+    // Health check endpoint
+    rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+    
+    // Get overall system status
+    rpc GetStatus(GetStatusRequest) returns (GetStatusResponse);
+}
+
+// Empty message for requests without parameters
+message Empty {}
