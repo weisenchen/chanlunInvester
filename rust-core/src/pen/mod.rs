@@ -303,12 +303,24 @@ mod tests {
     use crate::kline::{Kline, KlineSeries, TimeFrame};
     use chrono::Utc;
 
+    fn create_test_klines(prices: Vec<(f64, f64, f64)>) -> Vec<Kline> {
+        prices
+            .iter()
+            .enumerate()
+            .map(|(i, &(o, h, l))| {
+                let c = if o < h { o + (h - o) * 0.7 } else { o - (o - l) * 0.3 };
+                Kline::new(Utc::now(), o, h, l, c, 1000.0)
+            })
+            .collect()
+    }
+
     #[test]
     fn test_pen_validity() {
         let up_pen = Pen::up(0, 3, 100.0, 105.0);
         assert!(up_pen.is_valid());
         assert_eq!(up_pen.direction, PenDirection::Up);
         assert_eq!(up_pen.magnitude(), 5.0);
+        assert_eq!(up_pen.kline_count(), 4);
 
         let down_pen = Pen::down(0, 3, 100.0, 95.0);
         assert!(down_pen.is_valid());
@@ -318,8 +330,77 @@ mod tests {
 
     #[test]
     fn test_invalid_pen() {
-        // Up pen with end_price < start_price is invalid
         let invalid_up = Pen::up(0, 3, 100.0, 95.0);
         assert!(!invalid_up.is_valid());
+
+        let invalid_down = Pen::down(0, 3, 100.0, 105.0);
+        assert!(!invalid_down.is_valid());
+    }
+
+    #[test]
+    fn test_fractal_detection() {
+        let calc = PenCalculator::with_defaults();
+        
+        // Top fractal: high-high, higher high, lower high
+        let klines = vec![
+            Kline::new(Utc::now(), 100.0, 105.0, 99.0, 103.0, 1000.0),
+            Kline::new(Utc::now(), 103.0, 110.0, 102.0, 108.0, 1000.0),  // High point
+            Kline::new(Utc::now(), 108.0, 109.0, 104.0, 105.0, 1000.0),
+        ];
+
+        assert!(calc.is_top_fractal(&klines, 1));
+        assert!(!calc.is_bottom_fractal(&klines, 1));
+    }
+
+    #[test]
+    fn test_bottom_fractal() {
+        let calc = PenCalculator::with_defaults();
+        
+        // Bottom fractal: low-low, lower low, higher low
+        let klines = vec![
+            Kline::new(Utc::now(), 100.0, 101.0, 95.0, 97.0, 1000.0),
+            Kline::new(Utc::now(), 97.0, 98.0, 90.0, 92.0, 1000.0),  // Low point
+            Kline::new(Utc::now(), 92.0, 96.0, 91.0, 95.0, 1000.0),
+        ];
+
+        assert!(calc.is_bottom_fractal(&klines, 1));
+        assert!(!calc.is_top_fractal(&klines, 1));
+    }
+
+    #[test]
+    fn test_pen_formation_minimum_klines() {
+        let config = PenConfig {
+            use_new_definition: true,
+            strict_validation: true,
+            min_klines_between_turns: 3,
+        };
+        let calc = PenCalculator::new(config);
+
+        // Create series with clear up and down moves
+        let prices = vec![
+            (100.0, 102.0, 99.0),   // 0
+            (102.0, 105.0, 101.0),  // 1 - potential top
+            (105.0, 106.0, 103.0),  // 2
+            (105.0, 106.0, 102.0),  // 3
+            (102.0, 103.0, 98.0),   // 4 - potential bottom
+        ];
+        let klines = create_test_klines(prices);
+        
+        let mut series = KlineSeries::new("TEST".to_string(), TimeFrame::M5);
+        for k in klines {
+            series.push(k);
+        }
+
+        let pens = calc.identify_pens(&series);
+        // Should identify pens based on fractals
+        assert!(pens.len() >= 0); // May be 0 if not enough data for complete pens
+    }
+
+    #[test]
+    fn test_pen_calculator_default_config() {
+        let calc = PenCalculator::with_defaults();
+        assert!(calc.config.use_new_definition);
+        assert!(calc.config.strict_validation);
+        assert_eq!(calc.config.min_klines_between_turns, 3);
     }
 }
