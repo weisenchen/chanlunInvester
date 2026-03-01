@@ -4,7 +4,7 @@
 //! and health monitoring.
 
 use anyhow::Result;
-use tracing::{info, error};
+use tracing::{info, error, warn};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 mod kline;
@@ -13,6 +13,9 @@ mod segment;
 mod indicators;
 mod health;
 mod grpc;
+mod metrics;
+
+use metrics::{MetricsCollector, LatencyTracker};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -24,12 +27,21 @@ async fn main() -> Result<()> {
         .with(tracing_subscriber::fmt::layer().json())
         .init();
 
-    info!("Starting Trading Server v0.1.0");
-    info!("Architecture: Rust primary + Python backup");
+    info!("╔════════════════════════════════════════════════════════╗");
+    info!("║     ChanLun Trading Server v0.1.0                      ║");
+    info!("╠════════════════════════════════════════════════════════╣");
+    info!("║  Architecture: Rust primary + Python backup            ║");
+    info!("║  Pen Theory: New 3-K-line definition (新笔)            ║");
+    info!("║  Segments: Feature sequence method (特征序列)          ║");
+    info!("╚════════════════════════════════════════════════════════╝");
 
     // Load configuration
     let config = load_config()?;
-    info!("Configuration loaded: {:?}", config);
+    info!("Configuration loaded");
+
+    // Initialize metrics collector
+    let metrics = MetricsCollector::new();
+    info!("Metrics collector initialized");
 
     // Initialize health monitor
     let health_monitor = health::HealthMonitor::with_defaults();
@@ -37,7 +49,7 @@ async fn main() -> Result<()> {
 
     // Start gRPC server
     let addr = format!("{}:{}", config.server.host, config.server.port).parse()?;
-    info!("Starting gRPC server on {}", addr);
+    info!("gRPC server listening on {}", addr);
 
     // Clone health monitor for gRPC server
     let health_monitor_clone = health_monitor.clone();
@@ -49,12 +61,23 @@ async fn main() -> Result<()> {
         }
     });
 
-    info!("Trading server started successfully");
+    info!("✅ Trading server started successfully");
+    info!("Press Ctrl+C to shutdown");
     
     // Keep running
     tokio::signal::ctrl_c().await?;
-    info!("Shutting down...");
+    warn!("Shutdown signal received");
     
+    // Get final metrics
+    let final_metrics = metrics.get_metrics();
+    info!("📊 Final Metrics:");
+    info!("   - K-lines processed: {}", final_metrics.klines_processed);
+    info!("   - Pens identified: {}", final_metrics.pens_identified);
+    info!("   - Segments identified: {}", final_metrics.segments_identified);
+    info!("   - Avg latency: {:.2}ms", final_metrics.avg_latency_ms);
+    info!("   - Uptime: {}s", final_metrics.uptime_secs);
+    
+    info!("Shutting down...");
     server_handle.abort();
 
     Ok(())

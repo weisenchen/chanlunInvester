@@ -9,6 +9,7 @@ pub mod segment;
 pub mod indicators;
 pub mod health;
 pub mod grpc;
+pub mod metrics;
 
 pub use kline::*;
 pub use pen::*;
