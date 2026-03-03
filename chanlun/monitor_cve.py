@@ -25,7 +25,6 @@ def fetch_stock_data(symbol="CVE.TO", period="5d", interval="30m"):
 def fetch_multi_level_data(symbol="CVE.TO"):
     """获取多级别数据"""
     levels = {
-        '5m': fetch_stock_data(symbol, period="2d", interval="5m"),
         '30m': fetch_stock_data(symbol, period="10d", interval="30m"),
         '1d': fetch_stock_data(symbol, period="60d", interval="1d")
     }
@@ -77,7 +76,6 @@ def detect_buy_sell_points(df, fractals_high, fractals_low, level="30m"):
     
     # 不同级别的阈值
     threshold_map = {
-        '5m': {'buy2': 0.015, 'buy1': 2.0, 'sell2': 0.015},  # 5 分钟更敏感
         '30m': {'buy2': 0.02, 'buy1': 3.0, 'sell2': 0.02},    # 30 分钟标准
         '1d': {'buy2': 0.03, 'buy1': 5.0, 'sell2': 0.03}      # 日线更宽松
     }

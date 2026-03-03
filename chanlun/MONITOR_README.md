@@ -2,7 +2,7 @@
 
 ## 功能
 - ✅ 每 30 分钟自动分析 CVE.TO 的 **多级别** 走势
-- ✅ 支持 **5 分钟、30 分钟、日线** 三个级别
+- ✅ 支持 **30 分钟、日线** 两个级别
 - ✅ 检测缠论买卖点 (第一类、第二类、第三类)
 - ✅ 发现信号时自动发送 Telegram 提醒
 
@@ -39,10 +39,7 @@ crontab -e
 0 17 * * 1-5 cd /home/wei/.openclaw/workspace/chanlun && source venv/bin/activate && python3 monitor_cve.py >> /home/wei/.openclaw/workspace/chanlun/monitor.log 2>&1
 ```
 
-### 更频繁的 5 分钟级别监控 (每 10 分钟)
-```cron
-*/10 9-15 * * 1-5 cd /home/wei/.openclaw/workspace/chanlun && source venv/bin/activate && python3 monitor_cve.py >> /home/wei/.openclaw/workspace/chanlun/monitor.log 2>&1
-```
+
 
 ## 缠论买卖点检测逻辑
 
@@ -50,7 +47,6 @@ crontab -e
 
 | 级别 | Buy2 阈值 | Buy1 背驰阈值 | Sell2 阈值 |
 |------|----------|--------------|-----------|
-| 5 分钟 | 1.5% | 2.0% | 1.5% |
 | 30 分钟 | 2.0% | 3.0% | 2.0% |
 | 日线 | 3.0% | 5.0% | 3.0% |
 
@@ -79,7 +75,7 @@ crontab -e
 - ✅ 脚本可运行
 - ✅ 数据获取正常 (yfinance)
 - ✅ 分型检测正常
-- ✅ 多级别分析 (5m/30m/1d)
+- ✅ 多级别分析 (30m/1d)
 - ✅ Telegram 提醒已发送
 - ✅ Cron 自动监控已配置
 - ⚠️ 买卖点检测逻辑简化版
