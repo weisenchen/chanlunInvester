@@ -1,38 +1,32 @@
 {
-  "timestamp": "2026-03-03T11:04:09.248589",
+  "timestamp": "2026-03-04T16:43:21.812892",
   "symbol": "CVE.TO",
   "levels": {
-    "5m": {
-      "current_price": 31.020000457763672,
-      "fractals_high": 6,
-      "fractals_low": 7,
+    "30m": {
+      "current_price": 31.1200008392334,
+      "fractals_high": 8,
+      "fractals_low": 8,
       "signals": [
         {
           "type": "buy1",
-          "name": "5m\u7ea7\u522b\u7b2c\u4e00\u7c7b\u4e70\u70b9 (\u6f5c\u5728\u80cc\u9a70)",
-          "price": 31.020000457763672,
-          "time": "2026-03-03 11:04:09.209672",
+          "name": "30m\u7ea7\u522b\u7b2c\u4e00\u7c7b\u4e70\u70b9 (\u6f5c\u5728\u80cc\u9a70)",
+          "price": 31.1200008392334,
+          "time": "2026-03-04 16:43:21.799463",
           "confidence": "low",
-          "description": "\u5e95\u80cc\u9a70\u8ff9\u8c61\uff1a\u65b0\u4f4e 30.42 vs \u524d\u4f4e 30.97 (1.78%)"
+          "description": "\u5e95\u80cc\u9a70\u8ff9\u8c61\uff1a\u65b0\u4f4e 30.28 vs \u524d\u4f4e 30.42 (0.46%)"
         }
       ]
     },
-    "30m": {
-      "current_price": 31.020000457763672,
-      "fractals_high": 9,
-      "fractals_low": 7,
-      "signals": []
-    },
     "1d": {
-      "current_price": 31.020000457763672,
+      "current_price": 31.100000381469727,
       "fractals_high": 4,
       "fractals_low": 2,
       "signals": [
         {
           "type": "buy1",
           "name": "1d\u7ea7\u522b\u7b2c\u4e00\u7c7b\u4e70\u70b9 (\u6f5c\u5728\u80cc\u9a70)",
-          "price": 31.020000457763672,
-          "time": "2026-03-03 11:04:09.248422",
+          "price": 31.100000381469727,
+          "time": "2026-03-04 16:43:21.812719",
           "confidence": "low",
           "description": "\u5e95\u80cc\u9a70\u8ff9\u8c61\uff1a\u65b0\u4f4e 21.62 vs \u524d\u4f4e 22.60 (4.34%)"
         }
