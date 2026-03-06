@@ -45,7 +45,7 @@ UVIX_CONFIG = {
     'name': '2x Long VIX Futures ETF',
     'timeframe': '30m',  # 30 分钟级别
     'operation_level': '30 分钟',  # 主操作级别
-    'monitor_levels': ['30m', '5m'],  # 同时监控 30 分钟和 5 分钟级别
+    'monitor_levels': ['day', '30m', '5m'],  # 同时监控 日线、30 分钟和 5 分钟级别
     'sub_level': '5m',   # 次级别 (用于区间套)
     'macd_params': {
         'fast': 12,
@@ -71,7 +71,7 @@ def fetch_uvix_data(symbol='UVIX', count=200, timeframe='30m') -> KlineSeries:
     Args:
         symbol: 股票代码
         count: K 线数量
-        timeframe: 时间周期 ('30m' 或 '5m')
+        timeframe: 时间周期 ('day', '30m' 或 '5m')
     """
     klines = []
     
@@ -119,7 +119,10 @@ def fetch_uvix_data(symbol='UVIX', count=200, timeframe='30m') -> KlineSeries:
     print(f"    ⚠️  使用模拟数据 (建议安装 yfinance: pip install yfinance)")
     
     # 根据时间周期设置间隔
-    if timeframe == '5m':
+    if timeframe == 'day':
+        interval_minutes = 1440  # 日线
+        base_time = datetime(2025, 1, 1, 9, 30)
+    elif timeframe == '5m':
         interval_minutes = 5
         base_time = datetime(2026, 3, 3, 9, 30)
     else:  # 30m
@@ -129,17 +132,23 @@ def fetch_uvix_data(symbol='UVIX', count=200, timeframe='30m') -> KlineSeries:
     # 使用用户提供的真实价格作为基准
     base_price = 6.82  # 当前实际价格
     
-    random.seed(42 + int(timeframe[0]))  # 不同级别用不同随机种子
+    random.seed(42 + len(timeframe))  # 不同级别用不同随机种子
     
     for i in range(count):
         # VIX 相关 ETF 波动较大
-        # 5 分钟级别波动更频繁
-        if timeframe == '5m':
+        # 不同级别不同波动率
+        if timeframe == 'day':
+            volatility = random.uniform(-0.5, 0.5)
+            price_range = (0.3, 0.8)
+            volume_range = (2000000, 10000000)
+        elif timeframe == '5m':
             volatility = random.uniform(-0.15, 0.15)
             price_range = (0.1, 0.25)
-        else:
+            volume_range = (500000, 5000000)
+        else:  # 30m
             volatility = random.uniform(-0.3, 0.3)
             price_range = (0.2, 0.5)
+            volume_range = (500000, 5000000)
         
         price = base_price + volatility
         
@@ -155,7 +164,7 @@ def fetch_uvix_data(symbol='UVIX', count=200, timeframe='30m') -> KlineSeries:
             high=high,
             low=low,
             close=close_price,
-            volume=random.randint(500000, 5000000)
+            volume=random.randint(*volume_range)
         )
         klines.append(kline)
         
@@ -401,7 +410,7 @@ def main():
     print("ChanLun Multi-Level Buy/Sell Point Monitor for UVIX")
     print("="*70)
     print(f"\n📊 标的：{UVIX_CONFIG['symbol']} - {UVIX_CONFIG['name']}")
-    print(f"⏰ 监控级别：{', '.join(UVIX_CONFIG['monitor_levels'])}")
+    print(f"⏰ 监控级别：{', '.join(UVIX_CONFIG['monitor_levels'])} (新增日线!)")
     print(f"📈 MACD 参数：{UVIX_CONFIG['macd_params']['fast']}/{UVIX_CONFIG['macd_params']['slow']}/{UVIX_CONFIG['macd_params']['signal']}")
     print(f"🔔 提醒渠道：{', '.join(UVIX_CONFIG['alert_channels'])}")
     
