@@ -1,0 +1,134 @@
+# ChanLun Trading System - Live Trading Configuration
+# 缠论智能分析系统 - 实盘交易配置
+
+# Environment settings
+environment: live
+debug: false
+log_level: INFO
+
+# Data source configuration
+data:
+  provider: yahoo_finance  # or: akshare, baostock, tushare
+  cache_enabled: false  # Disable cache for live data
+  cache_ttl: 0
+  realtime_update: true
+  update_interval_sec: 60
+
+# Engine configuration
+engine:
+  rust_path: ./rust-core/target/release/libtrading_core.so
+  primary_engine: python  # Use Python for now (Rust fractal module pending)
+  failover_enabled: true
+  failover_threshold: 3  # Switch after 3 consecutive failures
+
+# ChanLun parameters
+chanlun:
+  stroke_definition: new_3kline  # 新笔定义 (第 65 课)
+  segment_strict: true
+  feature_sequence_enabled: true
+  containment_handling: true
+  
+# MACD parameters (standard, 第 24 课)
+macd:
+  fast_period: 12
+  slow_period: 26
+  signal_period: 9
+
+# Health monitoring
+health:
+  check_interval_ms: 1000
+  max_failures_before_switch: 3
+  response_timeout_ms: 500
+
+# Risk management (critical for live trading, 第 13 课)
+risk:
+  max_position_pct: 0.3      # Maximum 30% position per stock
+  max_total_exposure: 0.8    # Maximum 80% total exposure
+  stop_loss_pct: 0.05        # 5% stop loss
+  take_profit_pct: 0.10      # 10% take profit
+  max_daily_loss_pct: 0.03   # Maximum 3% daily loss
+  enable_auto_trade: false   # Manual confirmation required
+  
+  # Position sizing
+  position_sizing:
+    method: fixed_fractional  # fixed_fractional, kelly, risk_parity
+    risk_per_trade: 0.02      # 2% risk per trade
+  
+  # Circuit breakers
+  circuit_breaker:
+    enabled: true
+    max_consecutive_losses: 3
+    daily_loss_limit_pct: 0.05
+
+# Alert configuration
+alerts:
+  enabled: true
+  channels:
+    - type: telegram
+      enabled: true
+      # Uses OpenClaw message tool
+    - type: console
+      enabled: true
+    - type: file
+      enabled: true
+      path: ./logs/live_alerts.log
+  
+  # Alert triggers
+  triggers:
+    on_fractal_detected: false
+    on_pen_completed: false
+    on_segment_completed: true
+    on_center_formed: true
+    on_divergence_detected: true
+    on_bsp_detected: true      # Critical: Buy/Sell point detected
+    on_risk_limit_hit: true    # Critical: Risk limit breached
+    on_price_target_hit: true  # Price target reached
+  
+  # BSP confidence threshold
+  bsp_confidence_threshold: 0.7  # Only alert if confidence > 70%
+
+# Logging configuration
+logging:
+  level: INFO
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: ./logs/live_trading.log
+  max_size_mb: 100
+  backup_count: 10
+  console_output: true
+
+# Performance limits
+limits:
+  max_symbols: 50           # Maximum symbols to monitor
+  max_klines: 5000          # Maximum K-lines per symbol
+  max_memory_mb: 1024       # Maximum memory usage
+  max_cpu_pct: 80           # Maximum CPU usage
+
+# Monitoring levels
+monitoring:
+  primary_level: 30m        # Main operation level
+  secondary_level: 5m       # Secondary level for interval set
+  check_interval_minutes: 15  # Check every 15 minutes during active hours
+
+# Trading hours (US Eastern Time)
+trading_hours:
+  enabled: true
+  market_open: "09:30"
+  market_close: "16:00"
+  pre_market: "04:00"
+  after_hours: "20:00"
+  timezone: "America/New_York"
+
+# Production-specific settings
+production:
+  enable_metrics: true
+  metrics_port: 9090
+  enable_health_endpoint: true
+  health_endpoint_port: 8080
+  graceful_shutdown_timeout_sec: 30
+  
+  # Backup and recovery
+  backup:
+    enabled: true
+    interval_hours: 24
+    retention_days: 30
+    path: ./backups/

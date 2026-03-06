@@ -1,0 +1,100 @@
+# UVIX 缠论监控配置
+# UVIX ChanLun Monitor Cron Configuration
+
+# 监控任务配置
+monitor:
+  symbol: UVIX
+  name: "2x Long VIX Futures ETF"
+  enabled: true
+  
+  # 操作级别
+  timeframe: 30m  # 30 分钟级别
+  
+  # 监控频率
+  check_interval_minutes: 30  # 每 30 分钟检查一次 (K 线周期)
+  
+  # 监控时间 (美东时间)
+  trading_hours:
+    start: "09:30"  # 美股开盘
+    end: "16:00"    # 美股收盘
+  
+  # 提醒配置
+  alert:
+    enabled: true
+    
+    # 提醒渠道
+    channels:
+      - type: telegram
+        enabled: true
+        # 需要配置 Telegram Bot
+        bot_token_env: "TELEGRAM_BOT_TOKEN"
+        chat_id_env: "TELEGRAM_CHAT_ID"
+      
+      - type: console
+        enabled: true
+      
+      - type: file
+        enabled: true
+        path: ./logs/uvix_alerts.log
+    
+    # 提醒条件
+    triggers:
+      on_bsp1_detected: true    # 第一类买卖点
+      on_bsp2_detected: true    # 第二类买卖点
+      on_bsp3_detected: true    # 第三类买卖点
+      on_divergence_detected: true  # 背驰 detected
+      on_confidence_above: 0.7  # 置信度高于 70%
+    
+    # 提醒内容模板
+    template: |
+      🚨 UVIX 缠论买卖点信号
+      
+      📊 标的：{symbol}
+      🎯 类型：{bsp_type}
+      💰 价格：${price:.2f}
+      📈 置信度：{confidence:.0%}
+      📝 说明：{description}
+      
+      操作建议：{action}
+      止损：${stop_loss:.2f}
+      目标：${target:.2f}
+      
+      ⏰ 时间：{timestamp}
+      📚 缠论：第{lesson}课
+
+# 缠论分析参数
+chanlun:
+  # 笔定义
+  pen:
+    use_new_definition: true  # 新笔定义 (第 65 课)
+    min_klines: 3             # 至少 3 根 K 线
+  
+  # 线段划分
+  segment:
+    min_pens: 3               # 至少 3 笔
+    strict_mode: true         # 严格模式
+  
+  # MACD 参数 (第 24 课)
+  macd:
+    fast: 12
+    slow: 26
+    signal: 9
+  
+  # 背驰判断
+  divergence:
+    min_strength: 0.3         # 最小背驰强度
+    use_macd_area: true       # 使用 MACD 柱子面积比较
+
+# 风险控制 (第 13 课)
+risk:
+  max_position_pct: 0.3       # 最大仓位 30%
+  stop_loss_pct: 0.05         # 止损 5%
+  take_profit_pct: 0.10       # 止盈 10%
+  max_daily_loss_pct: 0.03    # 最大日亏损 3%
+
+# 日志配置
+logging:
+  level: INFO
+  file: ./logs/uvix_monitor.log
+  max_size_mb: 50
+  backup_count: 10

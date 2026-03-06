@@ -238,33 +238,54 @@ cd rust-core && cargo test
 cd python-layer && python -m pytest tests/
 ```
 
+## 📖 Examples
+
+Comprehensive examples demonstrating pen theory and buy/sell point identification:
+
+| # | Example | Description | Run Command |
+|---|---------|-------------|-------------|
+| 02 | 笔识别 (新定义) | New 3-K-line pen definition with fractal detection | `python3 examples/02_pen/main.py` |
+| 03 | 线段划分 | Line segment division with feature sequence analysis | `python3 examples/03_segment/main.py` |
+| 05 | 背驰与买卖点 | Divergence detection and all 3 buy/sell point types | `python3 examples/05_divergence/main.py` |
+| 06 | 第一类买卖点 | Type 1 B/S points (trend divergence) with risk/reward | `python3 examples/06_bsp1/main.py` |
+| 07 | 第二类买卖点 | Type 2 B/S points (pullback confirmation) | `python3 examples/07_bsp2/main.py` |
+| 08 | 第三类买卖点 | Type 3 B/S points (center breakout) | `python3 examples/08_bsp3/main.py` |
+| 09 | 区间套定位 | Multi-level recursive positioning (interval set) | `python3 examples/09_interval_set/main.py` |
+
+Each example includes:
+- ✅ Complete algorithm implementation
+- ✅ Sample data generation
+- ✅ ASCII visualization
+- ✅ JSON output
+- ✅ Detailed Chinese/English documentation
+
 ## 📈 Current Status
 
-### ✅ Completed
+### ✅ Completed (v1.0 - 2026-03-01)
 
 - [x] Architecture design
 - [x] Project structure setup
-- [x] Rust core scaffolding (kline, pen modules)
-- [x] Python layer setup
-- [x] gRPC proto definitions
+- [x] Rust core implementation (kline, pen, segment, indicators, health)
+- [x] Python backup layer (kline, fractal, pen, segment, indicators)
+- [x] gRPC proto definitions and interface
 - [x] Docker configurations (dev + prod)
 - [x] Build and deployment scripts
+- [x] Health monitoring and auto-failover
+- [x] Comprehensive example suite (7 examples, 3200+ lines)
+- [x] Unit and integration tests
 
 ### 🚧 In Progress
 
-- [ ] Complete Rust pen theory implementation
-- [ ] Implement segment division (特征序列)
-- [ ] Add MACD indicator
-- [ ] Build health monitoring system
-- [ ] Implement automatic failover
+- [ ] Production deployment testing
+- [ ] Real market data integration
+- [ ] Performance optimization
 
 ### 📋 TODO
 
-- [ ] Add comprehensive unit tests
-- [ ] Add integration tests
-- [ ] Performance benchmarks
-- [ ] Add more technical indicators
-- [ ] Add data persistence layer
+- [ ] Add more technical indicators (RSI, KDJ, Bollinger Bands)
+- [ ] Add data persistence layer (PostgreSQL/InfluxDB)
+- [ ] Add backtesting framework
+- [ ] Add real-time data feed integration
 
 ## 📚 Documentation
 
