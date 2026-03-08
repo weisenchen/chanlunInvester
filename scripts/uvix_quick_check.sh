@@ -1,7 +1,7 @@
 #!/bin/bash
 # UVIX 快速检查 - 随时运行查看当前状态
 
-PROJECT_DIR="/home/wei/.openclaw/workspace/trading-system"
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 echo "========================================================================"
 echo "UVIX 实时状态检查"

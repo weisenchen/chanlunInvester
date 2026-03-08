@@ -257,6 +257,19 @@ def cmd_examples(args):
     """List or run examples"""
     examples_dir = Path(__file__).parent / "examples"
     
+    examples = [
+        ("01", "basic_fractal", "基础分型识别 - Basic fractal identification"),
+        ("02", "pen", "笔识别 (新定义) - Pen identification (new 3-K-line)"),
+        ("03", "segment", "线段划分 - Segment division"),
+        ("04", "center", "中枢识别 - Center identification"),
+        ("05", "divergence", "背驰与买卖点 - Divergence and B/S points"),
+        ("06", "bsp1", "第一类买卖点 - Type 1 B/S points"),
+        ("07", "bsp2", "第二类买卖点 - Type 2 B/S points"),
+        ("08", "bsp3", "第三类买卖点 - Type 3 B/S points"),
+        ("09", "interval_set", "区间套定位 - Interval set positioning"),
+        ("10", "multi_level", "多级别联立 - Multi-level analysis"),
+    ]
+    
     if args.list or not args.run:
         # List available examples
         print(f"\n{'='*70}")
@@ -264,19 +277,6 @@ def cmd_examples(args):
         print(f"{'='*70}")
         print(f"\n{'ID':<4} | {'Name':<25} | {'Description':<30}")
         print(f"{'-'*70}")
-        
-        examples = [
-            ("01", "basic_fractal", "基础分型识别 - Basic fractal identification"),
-            ("02", "pen", "笔识别 (新定义) - Pen identification (new 3-K-line)"),
-            ("03", "segment", "线段划分 - Segment division"),
-            ("04", "center", "中枢识别 - Center identification"),
-            ("05", "divergence", "背驰与买卖点 - Divergence and B/S points"),
-            ("06", "bsp1", "第一类买卖点 - Type 1 B/S points"),
-            ("07", "bsp2", "第二类买卖点 - Type 2 B/S points"),
-            ("08", "bsp3", "第三类买卖点 - Type 3 B/S points"),
-            ("09", "interval_set", "区间套定位 - Interval set positioning"),
-            ("10", "multi_level", "多级别联立 - Multi-level analysis"),
-        ]
         
         for ex_id, name, desc in examples:
             ex_path = examples_dir / f"{ex_id}_{name}"

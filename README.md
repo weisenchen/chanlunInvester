@@ -47,18 +47,17 @@ A production-ready trading system that implements **pen theory (笔理论)** wit
 
 ### Why Hybrid?
 
-| Component | Technology | Why |
-|-----------|-----------|-----|
-| **Core Trading Logic** | 🦀 Rust | Performance, safety, concurrency |
-| **Integration Layer** | 🐍 Python | Flexibility, rapid iteration, ML libraries |
-| **Communication** | gRPC | Language-agnostic, health checks built-in |
-| **Failover** | Automatic | Zero-downtime switching on failures |
+| Component              | Technology | Why                                        |
+| ---------------------- | ---------- | ------------------------------------------ |
+| **Core Trading Logic** | 🦀 Rust     | Performance, safety, concurrency           |
+| **Integration Layer**  | 🐍 Python   | Flexibility, rapid iteration, ML libraries |
+| **Communication**      | gRPC       | Language-agnostic, health checks built-in  |
+| **Failover**           | Automatic  | Zero-downtime switching on failures        |
 
 ## 📁 Project Structure
 
 ```
-trading-system/
-├── ARCHITECTURE.md           # Detailed architecture documentation
+chanlunInvester/
 ├── Cargo.toml                # Rust workspace configuration
 ├── docker-compose.yml        # Development Docker setup
 ├── docker-compose.prod.yml   # Production Docker setup
@@ -180,14 +179,14 @@ health:
 
 ### gRPC Endpoints
 
-| Method | Description |
-|--------|-------------|
-| `SubmitKlines` | Submit OHLCV data for processing |
-| `CalculatePens` | Calculate pens using pen theory |
-| `CalculateSegments` | Calculate line segments |
-| `GetMACD` | Get MACD indicator values |
-| `HealthCheck` | Check service health |
-| `GetStatus` | Get overall system status |
+| Method              | Description                      |
+| ------------------- | -------------------------------- |
+| `SubmitKlines`      | Submit OHLCV data for processing |
+| `CalculatePens`     | Calculate pens using pen theory  |
+| `CalculateSegments` | Calculate line segments          |
+| `GetMACD`           | Get MACD indicator values        |
+| `HealthCheck`       | Check service health             |
+| `GetStatus`         | Get overall system status        |
 
 ### Example (Python)
 
@@ -242,15 +241,15 @@ cd python-layer && python -m pytest tests/
 
 Comprehensive examples demonstrating pen theory and buy/sell point identification:
 
-| # | Example | Description | Run Command |
-|---|---------|-------------|-------------|
-| 02 | 笔识别 (新定义) | New 3-K-line pen definition with fractal detection | `python3 examples/02_pen/main.py` |
-| 03 | 线段划分 | Line segment division with feature sequence analysis | `python3 examples/03_segment/main.py` |
-| 05 | 背驰与买卖点 | Divergence detection and all 3 buy/sell point types | `python3 examples/05_divergence/main.py` |
-| 06 | 第一类买卖点 | Type 1 B/S points (trend divergence) with risk/reward | `python3 examples/06_bsp1/main.py` |
-| 07 | 第二类买卖点 | Type 2 B/S points (pullback confirmation) | `python3 examples/07_bsp2/main.py` |
-| 08 | 第三类买卖点 | Type 3 B/S points (center breakout) | `python3 examples/08_bsp3/main.py` |
-| 09 | 区间套定位 | Multi-level recursive positioning (interval set) | `python3 examples/09_interval_set/main.py` |
+| #   | Example         | Description                                           | Run Command                                |
+| --- | --------------- | ----------------------------------------------------- | ------------------------------------------ |
+| 02  | 笔识别 (新定义) | New 3-K-line pen definition with fractal detection    | `python3 examples/02_pen/main.py`          |
+| 03  | 线段划分        | Line segment division with feature sequence analysis  | `python3 examples/03_segment/main.py`      |
+| 05  | 背驰与买卖点    | Divergence detection and all 3 buy/sell point types   | `python3 examples/05_divergence/main.py`   |
+| 06  | 第一类买卖点    | Type 1 B/S points (trend divergence) with risk/reward | `python3 examples/06_bsp1/main.py`         |
+| 07  | 第二类买卖点    | Type 2 B/S points (pullback confirmation)             | `python3 examples/07_bsp2/main.py`         |
+| 08  | 第三类买卖点    | Type 3 B/S points (center breakout)                   | `python3 examples/08_bsp3/main.py`         |
+| 09  | 区间套定位      | Multi-level recursive positioning (interval set)      | `python3 examples/09_interval_set/main.py` |
 
 Each example includes:
 - ✅ Complete algorithm implementation
@@ -289,7 +288,6 @@ Each example includes:
 
 ## 📚 Documentation
 
-- **ARCHITECTURE.md** - Detailed system design
 - **proto/trading.proto** - gRPC API reference
 - **config/default.yaml** - Configuration options
 

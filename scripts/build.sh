@@ -4,7 +4,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+cd "$SCRIPT_DIR/.."
 
 echo "🔧 Building Trading System..."
 echo ""
@@ -43,7 +43,7 @@ else
     
     # Generate Python gRPC code
     cd python-layer
-    python3 -m grpc_tools.protoc -I../proto --python_out=. --grpc_python_out=../proto/*.proto
+    python3 -m grpc_tools.protoc -I../proto --python_out=. --grpc_python_out=. ../proto/trading.proto
     cd ..
     echo "✅ gRPC code generated"
 fi
