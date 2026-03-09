@@ -2,7 +2,7 @@
 
 use std::time::Duration;
 use tokio::time::interval;
-use tracing::{info, warn, error, debug};
+use tracing::{info, warn, debug};
 
 /// Health status of an engine
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -24,6 +24,10 @@ pub struct HealthConfig {
     pub response_timeout_ms: u64,
     /// Enable automatic failover
     pub failover_enabled: bool,
+    /// Port for Rust engine
+    pub rust_port: u16,
+    /// Port for Python engine
+    pub python_port: u16,
 }
 
 impl Default for HealthConfig {
@@ -33,6 +37,8 @@ impl Default for HealthConfig {
             max_failures_before_switch: 3,
             response_timeout_ms: 500,
             failover_enabled: true,
+            rust_port: 50051,
+            python_port: 50052,
         }
     }
 }
@@ -84,9 +90,9 @@ impl HealthMonitor {
         &self,
         engine: ActiveEngine,
     ) -> Result<EngineHealth, Box<dyn std::error::Error>> {
-        let (host, port) = match engine {
-            ActiveEngine::Rust => ("localhost", 50051),
-            ActiveEngine::Python => ("localhost", 50052),
+        let (_host, _port) = match engine {
+            ActiveEngine::Rust => ("localhost", self.config.rust_port),
+            ActiveEngine::Python => ("localhost", self.config.python_port),
         };
 
         // TODO: Implement actual gRPC health check
@@ -152,7 +158,7 @@ impl HealthMonitor {
 
     /// Perform failover to the backup engine
     pub fn perform_failover(&mut self) -> ActiveEngine {
-        let previous = self.active_engine;
+        let _previous = self.active_engine;
         
         self.active_engine = match self.active_engine {
             ActiveEngine::Rust => {
@@ -217,12 +223,13 @@ impl HealthMonitor {
     }
 
     /// Get current status
-    pub fn status(&self) -> HealthStatus {
+    pub fn status(&self, health: EngineHealth) -> HealthStatus {
         HealthStatus {
             active_engine: self.active_engine,
             rust_failures: self.rust_failures,
             python_failures: self.python_failures,
             failover_enabled: self.config.failover_enabled,
+            health,
         }
     }
 }
@@ -234,6 +241,7 @@ pub struct HealthStatus {
     pub rust_failures: u32,
     pub python_failures: u32,
     pub failover_enabled: bool,
+    pub health: EngineHealth,
 }
 
 #[cfg(test)]

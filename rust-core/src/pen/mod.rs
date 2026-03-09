@@ -119,16 +119,14 @@ impl PenCalculator {
             return Vec::new();
         }
 
-        let mut pens = Vec::new();
         let klines = &series.klines;
-
-        if self.config.use_new_definition {
+        let mut pens = if self.config.use_new_definition {
             // New definition: minimum 3 K-lines per pen
-            pens = self.identify_pens_new_definition(klines);
+            self.identify_pens_new_definition(klines)
         } else {
             // Traditional definition would go here
-            pens = self.identify_pens_traditional(klines);
-        }
+            self.identify_pens_traditional(klines)
+        };
 
         // Apply strict validation if enabled
         if self.config.strict_validation {
@@ -247,14 +245,14 @@ impl PenCalculator {
     }
 
     /// Traditional pen identification (for comparison)
-    fn identify_pens_traditional(&self, klines: &[Kline]) -> Vec<Pen> {
+    fn identify_pens_traditional(&self, _klines: &[Kline]) -> Vec<Pen> {
         // Placeholder for traditional implementation
         // Traditional definition may allow 2 K-lines or have different rules
         Vec::new()
     }
 
     /// Apply strict validation rules to pens
-    fn validate_pens_strict(&self, mut pens: Vec<Pen>) -> Vec<Pen> {
+    fn validate_pens_strict(&self, pens: Vec<Pen>) -> Vec<Pen> {
         if pens.is_empty() {
             return pens;
         }
@@ -287,7 +285,7 @@ impl PenCalculator {
                 }
 
                 // Mark as confirmed if it has a successor
-                let mut confirmed_pen = pen;
+                let confirmed_pen = pen;
                 validated.push(confirmed_pen);
                 last_pen = Some(validated.last().unwrap().clone());
             }

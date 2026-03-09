@@ -13,8 +13,11 @@ Example 02: Pen Identification (New 3-K-line Definition)
 4. 满足最小价格波动
 """
 
+from pathlib import Path
 import sys
-sys.path.insert(0, '/home/wei/.openclaw/workspace/trading-system/python-layer')
+# Add project root and python-layer to path
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(PROJECT_ROOT / "python-layer"))
 
 from trading_system.kline import Kline, KlineSeries
 from trading_system.fractal import FractalDetector

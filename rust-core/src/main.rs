@@ -4,15 +4,11 @@
 //! and health monitoring.
 
 use anyhow::Result;
-use tracing::{info, error};
+use tracing::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
-
-mod kline;
-mod pen;
-mod segment;
-mod indicators;
-mod health;
-mod grpc;
+use std::sync::Arc;
+use tokio::sync::Mutex;
+use trading_core::{health, grpc};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -31,23 +27,34 @@ async fn main() -> Result<()> {
     let config = load_config()?;
     info!("Configuration loaded: {:?}", config);
 
-    // Initialize health monitor
-    let health_monitor = health::HealthMonitor::new(&config).await?;
+    // Initialize health monitor with config from health module
+    let health_cfg = health::HealthConfig {
+        check_interval_ms: config.health.check_interval_ms,
+        failover_enabled: config.health.failover_enabled,
+        rust_port: config.server.port,
+        python_port: 50056, // Placeholder for python engine
+        ..Default::default()
+    };
+    
+    let health_monitor = Arc::new(Mutex::new(health::HealthMonitor::new(health_cfg)));
     info!("Health monitor initialized");
 
     // Start gRPC server
     let addr = format!("{}:{}", config.server.host, config.server.port).parse()?;
     info!("Starting gRPC server on {}", addr);
 
-    // TODO: Implement gRPC server startup
-    // grpc::start_server(addr, health_monitor).await?;
+    // Start health monitoring in a separate task
+    let monitor_clone = Arc::clone(&health_monitor);
+    tokio::spawn(async move {
+        let mut monitor = monitor_clone.lock().await;
+        monitor.run_monitoring_loop().await;
+    });
 
-    info!("Trading server started successfully");
-    
-    // Keep running
-    tokio::signal::ctrl_c().await?;
+    // Start gRPC server and block on it
+    grpc::start_server(addr, Arc::clone(&health_monitor)).await
+        .map_err(|e| anyhow::anyhow!("gRPC server failed: {}", e))?;
+
     info!("Shutting down...");
-
     Ok(())
 }
 
@@ -101,7 +108,7 @@ impl Default for Config {
         Self {
             server: ServerConfig {
                 host: "0.0.0.0".to_string(),
-                port: 50051,
+                port: 50055,
             },
             macd: MacdConfig {
                 fast_period: 12,

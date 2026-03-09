@@ -16,8 +16,11 @@ Example 06: Type 1 Buy/Sell Points (Trend Divergence Points)
 3. 背驰强度足够 (>0.3)
 """
 
+from pathlib import Path
 import sys
-sys.path.insert(0, '/home/wei/.openclaw/workspace/trading-system/python-layer')
+# Add project root and python-layer to path
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(PROJECT_ROOT / 'python-layer'))
 
 from trading_system.kline import Kline, KlineSeries
 from datetime import datetime, timedelta

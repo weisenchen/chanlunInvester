@@ -13,8 +13,11 @@ Example 03: Line Segment Division
 4. 特征序列顶/底分型确认线段结束
 """
 
+from pathlib import Path
 import sys
-sys.path.insert(0, '/home/wei/.openclaw/workspace/trading-system/python-layer')
+# Add project root and python-layer to path
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(PROJECT_ROOT / 'python-layer'))
 
 from trading_system.kline import Kline, KlineSeries
 from trading_system.fractal import FractalDetector

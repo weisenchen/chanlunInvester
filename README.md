@@ -99,47 +99,107 @@ chanlunInvester/
     └── deploy.sh            # Docker deployment
 ```
 
-## 🚀 Quick Start
+## 🚀 Deployment & Usage
 
-### Prerequisites
+### ⚙️ Prerequisites
 
+- **Linux** (Tested on Ubuntu 22.04+)
 - **Rust** 1.75+ (`rustup install stable`)
-- **Python** 3.10+ (`python3 --version`)
-- **Docker** & **Docker Compose** (`docker --version`)
-- **protobuf-compiler** (optional, for gRPC)
+- **Python** 3.10+
+- **Protobuf Compiler** (`apt install protobuf-compiler`)
+- **Docker & Docker Compose** (Optional, for containerized deployment)
 
-### Development
+---
+
+### 🐳 Quick Start (with Docker)
+
+The easiest way to get the full stack (Rust Core + Python Backup + Monitor) running:
 
 ```bash
-# 1. Build everything
+# 1. Start core services
+docker-compose up -d
+
+# 2. Check logs
+docker-compose logs -f
+```
+
+For the full failover-enabled setup:
+```bash
+docker-compose --profile backup --profile monitor up -d
+```
+
+---
+
+### 💻 Local Deployment (Manual)
+
+For development or direct host execution, follow these steps:
+
+#### 1. Environment Setup
+```bash
+# Setup Python virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install dependencies
+pip install -r python-layer/requirements.txt
+pip install -e python-layer
+```
+
+#### 2. Build Components
+Use the integrated build script to compile the Rust core and generate gRPC stubs:
+```bash
 ./scripts/build.sh
-
-# 2. Run tests
-./scripts/test.sh
-
-# 3. Start with Docker
-docker-compose up
-
-# Or with failover monitoring
-docker-compose --profile backup --profile monitor up
 ```
 
-### Production
+#### 3. Run Components
+Open two terminals (with virtualenv activated):
 
+**Terminal 1: Rust Trading Engine (Primary)**
 ```bash
-# Deploy to production
-./scripts/deploy.sh prod
-
-# Or manually
-docker-compose -f docker-compose.prod.yml up -d
+cd rust-core
+cargo run --release
 ```
+
+**Terminal 2: Python Integration Layer / Launcher**
+```bash
+# Use the unified launcher (see section below)
+python launcher.py analyze 000001.SZ
+```
+
+---
+
+### �️ Unified Launcher (`launcher.py`)
+
+The project includes a powerful CLI tool to interact with all system features.
+
+| Command    | Usage                                    | Description                               |
+| ---------- | ---------------------------------------- | ----------------------------------------- |
+| `analyze`  | `python launcher.py analyze <symbol>`    | Run ChanLun analysis on a symbol          |
+| `examples` | `python launcher.py examples --list`     | List all available strategy examples      |
+| `run`      | `python launcher.py examples --run <id>` | Run a specific example (e.g., `02`, `05`) |
+| `server`   | `python launcher.py server`              | Start the API server                      |
+| `monitor`  | `python launcher.py monitor <symbol>`    | Start real-time monitoring                |
+
+**Example: Analyze 'Ping An Bank' (000001.SZ)**
+```bash
+python launcher.py analyze 000001.SZ --level 30m
+```
+
+---
+
+### 📈 UVIX Monitor & Alerts
+
+A specialized real-time monitor for UVIX is included in the `examples/` directory:
+- **Location**: `examples/uvix_monitor.py`
+- **Features**: 30m/5m multi-level analysis, Telegram alerts, CSV/JSON logging.
+- **Documentation**: See [UVIX_MONITOR_README.md](examples/UVIX_MONITOR_README.md) for setup details.
+
+---
 
 ## 📊 Configuration
 
 ### MACD Parameters
-
 Edit `config/default.yaml`:
-
 ```yaml
 macd:
   fast_period: 12      # Fast EMA period
@@ -147,14 +207,7 @@ macd:
   signal_period: 9     # Signal line period
 ```
 
-Or use presets from `config/macd_params.yaml`:
-- `standard` - Classic settings (12/26/9)
-- `fast` - Shorter timeframes (8/17/9)
-- `slow` - Longer timeframes (19/39/9)
-- `scalping` - Very fast (6/13/5)
-
-### Pen Theory
-
+### Pen Theory Logic
 ```yaml
 pen:
   definition: new_3kline      # new_3kline | traditional
@@ -162,153 +215,48 @@ pen:
   min_klines_between_turns: 3
 ```
 
-### Failover
-
-```yaml
-system:
-  primary_engine: rust
-  failover_enabled: true
-  health_check_interval_ms: 1000
-
-health:
-  max_failures_before_switch: 3
-  response_timeout_ms: 500
-```
-
-## 🔧 API Usage
-
-### gRPC Endpoints
-
-| Method              | Description                      |
-| ------------------- | -------------------------------- |
-| `SubmitKlines`      | Submit OHLCV data for processing |
-| `CalculatePens`     | Calculate pens using pen theory  |
-| `CalculateSegments` | Calculate line segments          |
-| `GetMACD`           | Get MACD indicator values        |
-| `HealthCheck`       | Check service health             |
-| `GetStatus`         | Get overall system status        |
-
-### Example (Python)
-
-```python
-import grpc
-from trading.proto import trading_pb2
-from trading.proto import trading_pb2_grpc
-
-# Connect to Rust engine
-channel = grpc.insecure_channel('localhost:50051')
-stub = trading_pb2_grpc.TradingServiceStub(channel)
-
-# Submit K-lines
-klines = [
-    trading_pb2.Kline(timestamp=1234567890, open=100, high=105, low=99, close=103, volume=1000),
-    # ... more klines
-]
-response = stub.SubmitKlines(
-    trading_pb2.SubmitKlinesRequest(
-        symbol="BTC/USD",
-        timeframe=trading_pb2.TimeFrame.TIMEFRAME_M5,
-        klines=klines
-    )
-)
-
-# Calculate pens
-pens = stub.CalculatePens(
-    trading_pb2.CalculatePensRequest(
-        symbol="BTC/USD",
-        timeframe=trading_pb2.TimeFrame.TIMEFRAME_M5,
-        last_n=100
-    )
-)
-
-print(f"Found {len(pens.pens)} pens")
-```
+---
 
 ## 🧪 Testing
 
+Run the full suite (Python + Rust + Examples):
 ```bash
-# Run all tests
 ./scripts/test.sh
-
-# Rust tests only
-cd rust-core && cargo test
-
-# Python tests only
-cd python-layer && python -m pytest tests/
 ```
 
-## 📖 Examples
+Individual tests:
+- **Rust**: `cd rust-core && cargo test`
+- **Python**: `pytest tests/`
 
-Comprehensive examples demonstrating pen theory and buy/sell point identification:
+---
 
-| #   | Example         | Description                                           | Run Command                                |
-| --- | --------------- | ----------------------------------------------------- | ------------------------------------------ |
-| 02  | 笔识别 (新定义) | New 3-K-line pen definition with fractal detection    | `python3 examples/02_pen/main.py`          |
-| 03  | 线段划分        | Line segment division with feature sequence analysis  | `python3 examples/03_segment/main.py`      |
-| 05  | 背驰与买卖点    | Divergence detection and all 3 buy/sell point types   | `python3 examples/05_divergence/main.py`   |
-| 06  | 第一类买卖点    | Type 1 B/S points (trend divergence) with risk/reward | `python3 examples/06_bsp1/main.py`         |
-| 07  | 第二类买卖点    | Type 2 B/S points (pullback confirmation)             | `python3 examples/07_bsp2/main.py`         |
-| 08  | 第三类买卖点    | Type 3 B/S points (center breakout)                   | `python3 examples/08_bsp3/main.py`         |
-| 09  | 区间套定位      | Multi-level recursive positioning (interval set)      | `python3 examples/09_interval_set/main.py` |
+## � Roadmap & Status
 
-Each example includes:
-- ✅ Complete algorithm implementation
-- ✅ Sample data generation
-- ✅ ASCII visualization
-- ✅ JSON output
-- ✅ Detailed Chinese/English documentation
-
-## 📈 Current Status
-
-### ✅ Completed (v1.0 - 2026-03-01)
-
-- [x] Architecture design
-- [x] Project structure setup
-- [x] Rust core implementation (kline, pen, segment, indicators, health)
-- [x] Python backup layer (kline, fractal, pen, segment, indicators)
-- [x] gRPC proto definitions and interface
-- [x] Docker configurations (dev + prod)
-- [x] Build and deployment scripts
-- [x] Health monitoring and auto-failover
-- [x] Comprehensive example suite (7 examples, 3200+ lines)
-- [x] Unit and integration tests
+### ✅ Completed (v1.0)
+- [x] **Hybrid Architecture**: Rust performance + Python flexibility.
+- [x] **Core Logic**: Full implementation of Pen (新笔) and Segment (线段).
+- [x] **Indicators**: Optimized MACD and Fractal detection.
+- [x] **Unified CLI**: Comprehensive launcher for all operations.
+- [x] **Alert System**: Telegram integration for real-time signals.
 
 ### 🚧 In Progress
+- [ ] Production-grade gRPC server implementation in Rust core.
+- [ ] Persistent storage (PostgreSQL) for historical analysis.
+- [ ] Real-time data connectors for US/China stock markets.
 
-- [ ] Production deployment testing
-- [ ] Real market data integration
-- [ ] Performance optimization
+---
 
-### 📋 TODO
+## 🤝 Contributing & License
 
-- [ ] Add more technical indicators (RSI, KDJ, Bollinger Bands)
-- [ ] Add data persistence layer (PostgreSQL/InfluxDB)
-- [ ] Add backtesting framework
-- [ ] Add real-time data feed integration
+1. Fork the repo.
+2. Create a feature branch.
+3. Submit a PR!
 
-## 📚 Documentation
-
-- **proto/trading.proto** - gRPC API reference
-- **config/default.yaml** - Configuration options
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Run tests: `./scripts/test.sh`
-5. Submit a pull request
-
-## 📄 License
-
-MIT License - see LICENSE file for details
+Licensed under **MIT**.
 
 ---
 
 <div align="center">
-
-**Built with ❤️ by Weisen**
-
+**Built with ❤️ by Weisen**  
 🦀 Rust + 🐍 Python + 🔄 Automatic Failover = 💪 Reliable Trading System
-
 </div>

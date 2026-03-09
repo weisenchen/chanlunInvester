@@ -16,8 +16,11 @@ Example 08: Type 3 Buy/Sell Points (Center Breakout Confirmation)
 - 需要中枢作为参考
 """
 
+from pathlib import Path
 import sys
-sys.path.insert(0, '/home/wei/.openclaw/workspace/trading-system/python-layer')
+# Add project root and python-layer to path
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(PROJECT_ROOT / 'python-layer'))
 
 from trading_system.kline import Kline, KlineSeries
 from datetime import datetime, timedelta

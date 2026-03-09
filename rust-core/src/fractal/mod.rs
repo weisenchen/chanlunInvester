@@ -216,6 +216,7 @@ impl FractalDetector {
                         low: current.low.max(next.low),
                         close: current.close,
                         volume: current.volume + next.volume,
+                        turnover: None,
                     }
                 } else {
                     // Down trend: lower high, lower low
@@ -226,6 +227,7 @@ impl FractalDetector {
                         low: current.low.min(next.low),
                         close: current.close,
                         volume: current.volume + next.volume,
+                        turnover: None,
                     }
                 };
 
@@ -257,6 +259,7 @@ impl Default for FractalDetector {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::kline::{Kline, KlineSeries, TimeFrame};
     use chrono::{DateTime, Utc};
 
     fn create_kline(high: f64, low: f64) -> Kline {
@@ -266,7 +269,8 @@ mod tests {
             high,
             low,
             close: (high + low) / 2.0,
-            volume: 1000,
+            volume: 1000.0,
+            turnover: None,
         }
     }
 
@@ -280,7 +284,7 @@ mod tests {
         let series = KlineSeries {
             klines,
             symbol: "TEST".to_string(),
-            timeframe: "30m".to_string(),
+            timeframe: TimeFrame::M30,
         };
 
         let detector = FractalDetector::new();
@@ -302,7 +306,7 @@ mod tests {
         let series = KlineSeries {
             klines,
             symbol: "TEST".to_string(),
-            timeframe: "30m".to_string(),
+            timeframe: TimeFrame::M30,
         };
 
         let detector = FractalDetector::new();
@@ -324,7 +328,7 @@ mod tests {
         let series = KlineSeries {
             klines,
             symbol: "TEST".to_string(),
-            timeframe: "30m".to_string(),
+            timeframe: TimeFrame::M30,
         };
 
         let detector = FractalDetector::with_config(FractalConfig {

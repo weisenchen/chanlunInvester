@@ -4,6 +4,7 @@ version.workspace = true
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
+build = "build.rs"
 
 [dependencies]
 # Async runtime
@@ -38,6 +39,10 @@ ndarray = "0.15"
 [dev-dependencies]
 criterion.workspace = true
 quickcheck.workspace = true
+
+[build-dependencies]
+tonic-build.workspace = true
+prost-build.workspace = true
 
 [[bin]]
 name = "trading-server"
