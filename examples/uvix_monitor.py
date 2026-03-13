@@ -62,10 +62,10 @@ UVIX_CONFIG = {
 
 def fetch_uvix_data(symbol='UVIX', count=200, timeframe='30m') -> KlineSeries:
     """
-    获取 UVIX 的 K 线数据
+    获取 UVIX 的 K 线数据 (US Market)
     
     数据源优先级:
-    1. Yahoo Finance (真实数据)
+    1. Yahoo Finance (真实 US 市场数据)
     2. 模拟数据 (备用)
     
     Args:
@@ -75,27 +75,32 @@ def fetch_uvix_data(symbol='UVIX', count=200, timeframe='30m') -> KlineSeries:
     """
     klines = []
     
-    # 尝试从 Yahoo Finance 获取真实数据
+    # 尝试从 Yahoo Finance 获取真实 US 市场数据
     if YFINANCE_AVAILABLE:
         try:
-            print(f"    📡 从 Yahoo Finance 获取真实数据...")
+            print(f"    📡 从 Yahoo Finance 获取 US 市场真实数据...")
             uvix = yf.Ticker(symbol)
             
-            # 根据时间周期选择间隔
-            if timeframe == '5m':
+            # 根据时间周期选择间隔 (US Market Hours: 9:30-16:00 ET)
+            if timeframe == 'day':
+                interval = '1d'
+                period = '3mo'  # 3 个月日线
+            elif timeframe == '5m':
                 interval = '5m'
-                period = '5d'  # 5 天数据
+                period = '5d'  # 5 天数据 (覆盖当日)
             else:  # 30m
                 interval = '30m'
                 period = '1mo'  # 1 个月数据
             
-            # 获取历史数据
+            # 获取历史数据 (Yahoo Finance 自动处理 US 市场时间)
             history = uvix.history(period=period, interval=interval)
             
             if len(history) > 0:
-                print(f"    ✓ 获取到 {len(history)} 条真实数据")
+                print(f"    ✓ 获取到 {len(history)} 条 US 市场数据")
+                print(f"    时间范围：{history.index[0].strftime('%Y-%m-%d %H:%M')} → {history.index[-1].strftime('%Y-%m-%d %H:%M')}")
                 
                 for idx, row in history.iterrows():
+                    # 确保使用 US 市场价格
                     kline = Kline(
                         timestamp=idx.to_pydatetime(),
                         open=float(row['Open']),
@@ -108,6 +113,11 @@ def fetch_uvix_data(symbol='UVIX', count=200, timeframe='30m') -> KlineSeries:
                 
                 if len(klines) >= count:
                     klines = klines[-count:]  # 取最近 count 条
+                
+                # 显示最新价格
+                if klines:
+                    latest = klines[-1]
+                    print(f"    最新价格：${latest.close:.2f} (Volume: {latest.volume:,})")
                 
                 return KlineSeries(klines=klines, symbol=symbol, timeframe=timeframe)
         
