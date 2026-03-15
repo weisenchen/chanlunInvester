@@ -14,13 +14,15 @@ A production-ready trading system that implements **pen theory (笔理论)** wit
 
 ### Key Features
 
-- ✅ **New Pen Definition**: 3 K-line minimum with strict fractal validation
-- ✅ **Strict Segment Division**: Feature sequence implementation with inclusion handling
-- ✅ **Configurable MACD**: Runtime-adjustable parameters (fast/slow/signal periods)
+- ✅ **New Pen Definition**: 3 K-line minimum with strict fractal validation (新笔定义)
+- ✅ **Strict Segment Division**: Feature sequence implementation (特征序列)
+- ✅ **Center Detection**: Automatic center identification (中枢识别)
+- ✅ **Configurable MACD**: Runtime-adjustable parameters (12/26/9 standard)
 - ✅ **Dual Architecture**: Rust primary + Python automatic failover
 - ✅ **Health Monitoring**: Continuous health checks with automatic switchover
+- ✅ **Buy/Sell Points**: All 3 types auto-detected (三类买卖点)
 - ✅ **Docker Deployment**: Ready for development and production
-- ✅ **No Frontend**: CLI/API-only interface for backend integration
+- ✅ **Security First**: Comprehensive .gitignore, no sensitive data in repo
 
 ## 🏗️ Architecture
 
@@ -61,7 +63,7 @@ A production-ready trading system that implements **pen theory (笔理论)** wit
 ```
 trading-system/
 ├── README.md                 # Project overview
-├── SECURITY.md               # Security guidelines
+├── SECURITY.md               # Security guidelines ⭐
 ├── ARCHITECTURE.md           # System architecture
 ├── DEVELOPMENT_PLAN.md       # Development roadmap
 ├── QUICK_REFERENCE.md        # Quick reference
@@ -75,20 +77,20 @@ trading-system/
 ├── Dockerfile.rust           # Rust Dockerfile
 ├── Dockerfile.python         # Python Dockerfile
 │
-├── rust-core/                # 🦀 Rust Engine (11 files)
+├── rust-core/                # 🦀 Rust Engine (10 files)
 │   ├── Cargo.toml
 │   └── src/
 │       ├── lib.rs           # Library root
 │       ├── main.rs          # Server binary
-│       ├── kline/           # K-line data
+│       ├── kline/           # K-line data structures
 │       ├── fractal/         # Fractal detection
-│       ├── pen/             # Pen theory
-│       ├── segment/         # Segment division
+│       ├── pen/             # Pen theory (新笔定义)
+│       ├── segment/         # Segment division (特征序列)
 │       ├── indicators/      # MACD indicators
 │       ├── health/          # Health monitoring
 │       └── grpc/            # gRPC service
 │
-├── python-layer/             # 🐍 Python Layer (11 files)
+├── python-layer/             # 🐍 Python Layer (9 files)
 │   ├── pyproject.toml
 │   ├── requirements.txt
 │   └── trading_system/
@@ -97,40 +99,43 @@ trading-system/
 │       ├── fractal/         # Fractal backup
 │       ├── pen/             # Pen backup
 │       ├── segment/         # Segment backup
-│       ├── center/          # Center detection
-│       └── indicators/      # Indicators
+│       ├── center/          # Center detection (中枢)
+│       └── indicators/      # MACD indicators
 │
 ├── proto/                    # Protocol Buffers
-│   └── trading.proto        # gRPC definition
+│   └── trading.proto        # gRPC service definition
 │
 ├── config/                   # Configuration (3 files)
-│   ├── default.yaml         # System config
-│   ├── live.yaml            # Live trading
-│   └── macd_params.yaml     # MACD params
+│   ├── default.yaml         # System configuration
+│   ├── live.yaml            # Live trading config
+│   └── macd_params.yaml     # MACD parameters
 │
-├── examples/                 # Examples (7 files)
-│   ├── 02_pen/              # Pen identification
-│   ├── 03_segment/          # Segment division
-│   ├── 05_divergence/       # Divergence
-│   ├── 06_bsp1/             # Type 1 BSP
-│   ├── 07_bsp2/             # Type 2 BSP
-│   ├── 08_bsp3/             # Type 3 BSP
-│   └── 09_interval_set/     # Interval set
+├── examples/                 # Working Examples (10 directories)
+│   ├── 01_basic_fractal/    # Basic fractal identification
+│   ├── 02_pen/              # Pen identification (笔)
+│   ├── 03_segment/          # Segment division (线段)
+│   ├── 04_center/           # Center detection (中枢)
+│   ├── 05_divergence/       # Divergence detection (背驰)
+│   ├── 06_bsp1/             # Type 1 Buy/Sell Points
+│   ├── 07_bsp2/             # Type 2 Buy/Sell Points
+│   ├── 08_bsp3/             # Type 3 Buy/Sell Points
+│   ├── 09_interval_set/     # Interval Set (区间套)
+│   └── 10_multi_level/      # Multi-level Analysis
 │
-├── tests/                    # Tests (4 files)
-│   ├── test_fractal.py
-│   ├── test_pen.py
-│   ├── test_segment.py
-│   └── test_integration.py
+├── tests/                    # Test Suite (4 files)
+│   ├── test_fractal.py      # Fractal tests
+│   ├── test_pen.py          # Pen tests
+│   ├── test_segment.py      # Segment tests
+│   └── test_integration.py  # Integration tests
 │
-└── scripts/                  # Scripts (5 files)
-    ├── build.sh             # Build
-    ├── test.sh              # Test runner
-    ├── deploy.sh            # Deploy
+└── scripts/                  # Automation Scripts (5 files)
+    ├── build.sh             # Build all components
+    ├── test.sh              # Run all tests
+    ├── deploy.sh            # Docker deployment
     └── ...
 ```
 
-## 🚀 Deployment & Usage
+## 🚀 Quick Start
 
 ### ⚙️ Prerequisites
 
@@ -138,7 +143,51 @@ trading-system/
 - **Rust** 1.75+ (`rustup install stable`)
 - **Python** 3.10+
 - **Protobuf Compiler** (`apt install protobuf-compiler`)
-- **Docker & Docker Compose** (Optional, for containerized deployment)
+- **Docker & Docker Compose** (Optional)
+
+---
+
+### 🐳 Option 1: Docker (Recommended)
+
+```bash
+# Start all services
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+```
+
+---
+
+### 💻 Option 2: Local Development
+
+```bash
+# 1. Install Python dependencies
+python3 -m venv venv
+source venv/bin/activate
+pip install -r python-layer/requirements.txt
+
+# 2. Build Rust core
+./scripts/build.sh
+
+# 3. Run tests
+./scripts/test.sh
+```
+
+---
+
+### 🧪 Run Examples
+
+```bash
+# Example 2: Pen identification
+python3 examples/02_pen/main.py
+
+# Example 5: Divergence detection
+python3 examples/05_divergence/main.py
+
+# Example 6: Type 1 Buy/Sell Points
+python3 examples/06_bsp1/main.py
+```
 
 ---
 
