@@ -56,7 +56,7 @@ A production-ready trading system that implements **pen theory (笔理论)** wit
 
 ## 📁 Project Structure
 
-**Total:** 67 files (~7.5 MB)
+**Total:** 52 files (~6.5 MB)
 
 ```
 trading-system/
@@ -103,22 +103,19 @@ trading-system/
 ├── proto/                    # Protocol Buffers
 │   └── trading.proto        # gRPC definition
 │
-├── config/                   # Configuration (5 files)
+├── config/                   # Configuration (3 files)
 │   ├── default.yaml         # System config
 │   ├── live.yaml            # Live trading
-│   ├── macd_params.yaml     # MACD params
-│   └── uvix_cron.yaml       # UVIX cron
+│   └── macd_params.yaml     # MACD params
 │
-├── examples/                 # Examples (10 files)
+├── examples/                 # Examples (7 files)
 │   ├── 02_pen/              # Pen identification
 │   ├── 03_segment/          # Segment division
 │   ├── 05_divergence/       # Divergence
 │   ├── 06_bsp1/             # Type 1 BSP
 │   ├── 07_bsp2/             # Type 2 BSP
 │   ├── 08_bsp3/             # Type 3 BSP
-│   ├── 09_interval_set/     # Interval set
-│   ├── uvix_monitor.py      # UVIX monitor
-│   └── UVIX_MONITOR_README.md
+│   └── 09_interval_set/     # Interval set
 │
 ├── tests/                    # Tests (4 files)
 │   ├── test_fractal.py
@@ -126,11 +123,10 @@ trading-system/
 │   ├── test_segment.py
 │   └── test_integration.py
 │
-└── scripts/                  # Scripts (15 files)
+└── scripts/                  # Scripts (5 files)
     ├── build.sh             # Build
     ├── test.sh              # Test runner
     ├── deploy.sh            # Deploy
-    ├── uvix_*.py            # UVIX monitoring
     └── ...
 ```
 
