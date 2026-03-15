@@ -238,60 +238,300 @@ pip install -r python-layer/requirements.txt
 
 ---
 
-### 🧪 Run Examples
+## 📖 Detailed Usage Examples
 
+### 🧪 1. Running ChanLun Examples
+
+**Example 2: Pen Identification (笔识别)**
 ```bash
-# Example 2: Pen identification
+cd /home/wei/.openclaw/workspace/trading-system
 python3 examples/02_pen/main.py
+```
 
-# Example 5: Divergence detection
+**Example 3: Segment Division (线段划分)**
+```bash
+python3 examples/03_segment/main.py
+```
+
+**Example 5: Divergence Detection (背驰检测)**
+```bash
 python3 examples/05_divergence/main.py
+```
 
-# Example 6: Type 1 Buy/Sell Points
+**Example 6: Type 1 Buy/Sell Points (第一类买卖点)**
+```bash
 python3 examples/06_bsp1/main.py
 ```
 
 ---
 
-### 📊 Data Source Configuration
+### 📊 2. Real-time Monitoring
 
-**Default:** Yahoo Finance (automatically configured)
-
+**Monitor UVIX (5-minute timeframe)**
 ```bash
-# No configuration needed - works out of the box
-python3 launcher.py monitor UVIX
+python3 launcher.py monitor UVIX --level 5m
 ```
 
-**Supported Symbols:**
-- US Stocks: AAPL, MSFT, TSLA, NVDA, etc.
-- ETFs: SPY, QQQ, UVIX, VIX, etc.
-- Cryptocurrencies: BTC-USD, ETH-USD, etc.
-- Indices: ^GSPC, ^DJI, ^IXIC, etc.
+**Monitor Apple Stock (30-minute timeframe)**
+```bash
+python3 launcher.py monitor AAPL --level 30m
+```
+
+**Monitor Tesla (Daily timeframe)**
+```bash
+python3 launcher.py monitor TSLA --level day
+```
+
+**Monitor Bitcoin**
+```bash
+python3 launcher.py monitor BTC-USD --level 1h
+```
+
+**Monitor S&P 500 Index**
+```bash
+python3 launcher.py monitor ^GSPC --level day
+```
 
 ---
 
-### 📊 Monitor Symbols
+### 🔍 3. Analysis Workflow
 
+**Step 1: Fetch Real-time Data**
 ```bash
-# Monitor any symbol (real-time Yahoo Finance data)
 python3 launcher.py monitor UVIX --level 5m
-
-# Different timeframes
-python3 launcher.py monitor AAPL --level 30m
-python3 launcher.py monitor TSLA --level day
-
-# With alert channel
-python3 launcher.py monitor NVDA --level 5m --alert telegram
 ```
 
-**Features:**
-- ✅ Real-time data from Yahoo Finance (default)
-- ✅ ChanLun analysis (fractals, pens, segments)
-- ✅ Trading signal detection
-- ✅ Works with any US stock symbol
-- ✅ Automatic timeframe handling
+**Output:**
+```
+[1] Starting real-time monitor...
+    Symbol: UVIX
+    Level:  5m
 
-**Note:** For UVIX, the dedicated monitoring module provides continuous monitoring with alerts. The launcher command provides on-demand analysis.
+[2] Fetching data from Yahoo Finance...
+    ✓ Fetched 100 K-lines
+    Range: 2026-03-09 → 2026-03-13
+    Price: $8.87
+
+[3] Analyzing UVIX...
+    ✓ Fractals: 39 (Top: 17, Bottom: 22)
+    ✓ Pens: 28 (Up: 19, Down: 9)
+    ✓ Segments: 2 (Up: 2, Down: 0)
+
+Trading Signals
+  ⚪ HOLD - No clear signal
+     Current: UP segment
+```
+
+**Step 2: Run Detailed Example**
+```bash
+# For deeper analysis, run specific examples
+python3 examples/05_divergence/main.py
+```
+
+**Step 3: Check for Buy/Sell Signals**
+```bash
+# Monitor will automatically detect and show signals
+python3 launcher.py monitor UVIX --level 30m
+```
+
+---
+
+### 🐳 4. Docker Deployment
+
+**Start All Services**
+```bash
+cd /home/wei/.openclaw/workspace/trading-system
+docker-compose up -d
+```
+
+**View Logs**
+```bash
+docker-compose logs -f
+```
+
+**Stop Services**
+```bash
+docker-compose down
+```
+
+**Production Deployment**
+```bash
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+---
+
+### 🧪 5. Testing
+
+**Run All Tests**
+```bash
+./scripts/test.sh
+```
+
+**Run Specific Test**
+```bash
+python3 tests/test_fractal.py
+python3 tests/test_pen.py
+python3 tests/test_segment.py
+python3 tests/test_integration.py
+```
+
+**Test Output Example:**
+```
+======================================================================
+Fractal Detection Module Tests
+分型检测模块测试
+======================================================================
+
+Testing top fractal detection...
+  ✓ Top fractal detection passed
+Testing bottom fractal detection...
+  ✓ Bottom fractal detection passed
+Testing multiple fractals...
+  ✓ Multiple fractals detection passed (3 fractals)
+
+======================================================================
+Test Results: 5 passed, 0 failed
+======================================================================
+```
+
+---
+
+### 🔧 6. Build & Development
+
+**Build Rust Core**
+```bash
+./scripts/build.sh
+```
+
+**Install Python Dependencies**
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r python-layer/requirements.txt
+```
+
+**Development Mode**
+```bash
+# Install in editable mode
+pip install -e python-layer
+
+# Run examples directly
+python3 examples/02_pen/main.py
+```
+
+---
+
+### 📈 7. Common Trading Scenarios
+
+**Scenario 1: Day Trading UVIX**
+```bash
+# Monitor 5-minute chart for entry points
+python3 launcher.py monitor UVIX --level 5m
+
+# Run every 10 minutes during market hours
+watch -n 600 python3 launcher.py monitor UVIX --level 5m
+```
+
+**Scenario 2: Swing Trading Stocks**
+```bash
+# Monitor daily chart for swing trades
+python3 launcher.py monitor AAPL --level day
+
+# Check 30-minute for precise entry
+python3 launcher.py monitor AAPL --level 30m
+```
+
+**Scenario 3: Multi-timeframe Analysis**
+```bash
+# Start with daily for trend
+python3 launcher.py monitor TSLA --level day
+
+# Then 30-minute for setup
+python3 launcher.py monitor TSLA --level 30m
+
+# Finally 5-minute for entry
+python3 launcher.py monitor TSLA --level 5m
+```
+
+---
+
+### ⚙️ 8. Configuration
+
+**View Current Configuration**
+```bash
+cat config/default.yaml
+```
+
+**Modify MACD Parameters**
+```yaml
+# config/default.yaml
+macd:
+  fast_period: 12      # Fast EMA
+  slow_period: 26      # Slow EMA
+  signal_period: 9     # Signal line
+```
+
+**Change Pen Definition**
+```yaml
+# config/default.yaml
+chanlun:
+  stroke_definition: new_3kline  # New 3-K-line definition
+  segment_strict: true           # Strict segment division
+```
+
+---
+
+### 📊 9. Data Management
+
+**Clear Cache**
+```bash
+rm -rf ~/.cache/yfinance
+```
+
+**Export Analysis Results**
+```bash
+python3 launcher.py monitor UVIX --level 5m --output results.json
+```
+
+**View Logs**
+```bash
+tail -f logs/uvix_cron.log
+tail -f logs/realtime_alerts.log
+```
+
+---
+
+### 🆘 10. Troubleshooting
+
+**Issue: No data returned**
+```bash
+# Check symbol is correct
+python3 launcher.py monitor AAPL --level day
+
+# Verify internet connection
+ping yahoo.com
+
+# Check yfinance installation
+pip show yfinance
+```
+
+**Issue: Import errors**
+```bash
+# Reinstall dependencies
+pip install -r python-layer/requirements.txt --force-reinstall
+```
+
+**Issue: Rust build fails**
+```bash
+# Update Rust
+rustup update
+
+# Clean and rebuild
+cd rust-core
+cargo clean
+cargo build --release
+```
 
 ---
 
