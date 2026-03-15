@@ -191,6 +191,20 @@ python3 examples/06_bsp1/main.py
 
 ---
 
+### 📊 Monitor Symbols
+
+```bash
+# Monitor any symbol (real-time analysis)
+python3 launcher.py monitor UVIX --level 5m
+
+# Monitor with custom alert channel
+python3 launcher.py monitor AAPL --level 30m --alert telegram
+```
+
+**Note:** Full UVIX real-time monitoring requires the dedicated module. The monitor command will run analysis with sample data for any symbol.
+
+---
+
 ### 🐳 Quick Start (with Docker)
 
 The easiest way to get the full stack (Rust Core + Python Backup + Monitor) running:
