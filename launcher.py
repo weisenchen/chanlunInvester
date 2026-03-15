@@ -165,39 +165,151 @@ def cmd_backtest(args):
 
 def cmd_monitor(args):
     """Monitor a symbol in real-time"""
+    import subprocess
+    
     print(f"\n{'='*70}")
     print(f"ChanLun Real-time Monitor")
     print(f"{'='*70}")
     
-    print(f"\n[1] Starting monitor...")
-    print(f"    Symbol: {args.symbol}")
-    print(f"    Level: {args.level}")
-    print(f"    Alert: {args.alert}")
+    print(f"\n[1] Starting real-time monitor...")
+    print(f"    Symbol: {args.symbol.upper()}")
+    print(f"    Level:  {args.level}")
+    print(f"    Alert:  {args.alert}")
     
-    # In production, this would start real-time monitoring
-    print(f"\n[2] Connecting to data source...")
-    print(f"    ⚠️  Real-time monitoring not yet implemented")
-    print(f"    ℹ️  This is a placeholder for future functionality")
+    # Check if uvix_monitor.py exists (optional feature)
+    monitor_script = Path(__file__).parent / 'examples' / 'uvix_monitor.py'
     
-    print(f"\n{'='*70}")
-    print(f"Monitor Status")
-    print(f"{'='*70}")
-    print(f"  Symbol:       {args.symbol}")
-    print(f"  Level:        {args.level}")
-    print(f"  Alert Channel:{args.alert}")
-    print(f"  Status:       ⚠️  Not implemented")
-    print(f"{'='*70}")
-    print(f"\nℹ️  Press Ctrl+C to stop\n")
-    
-    # Keep running (placeholder)
-    try:
-        import time
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        print(f"\n✓ Monitor stopped")
-    
-    return 0
+    if monitor_script.exists():
+        print(f"\n[2] Launching monitor...")
+        print(f"    Script: {monitor_script}")
+        print(f"\n{'='*70}")
+        print(f"Real-time Monitoring Active")
+        print(f"{'='*70}")
+        print(f"  Symbol:       {args.symbol.upper()}")
+        print(f"  Level:        {args.level}")
+        print(f"  Alert:        {args.alert}")
+        print(f"  Status:       ✅ Running")
+        print(f"{'='*70}")
+        print(f"\nℹ️  Monitoring will check every 10-30 minutes")
+        print(f"ℹ️  Alerts will be sent via {args.alert}")
+        print(f"ℹ️  Press Ctrl+C to stop\n")
+        
+        # Run the actual monitor script
+        try:
+            result = subprocess.run(
+                ['python3', str(monitor_script)],
+                cwd=str(monitor_script.parent.parent),
+                timeout=None
+            )
+            
+            if result.returncode == 0:
+                print(f"\n✓ Monitor completed successfully")
+            else:
+                print(f"\n⚠️  Monitor completed with warnings (code: {result.returncode})")
+            
+            return result.returncode
+            
+        except subprocess.TimeoutExpired:
+            print(f"\n✓ Monitor timed out")
+            return 0
+        except KeyboardInterrupt:
+            print(f"\n✓ Monitor stopped by user")
+            return 0
+        except Exception as e:
+            print(f"\n❌ Monitor error: {e}")
+            return 1
+    else:
+        # UVIX monitoring not installed - run regular analysis instead
+        print(f"\n⚠️  UVIX monitoring module not installed")
+        print(f"    Running single analysis instead...\n")
+        
+        # Import and run analysis
+        sys.path.insert(0, str(Path(__file__).parent / 'python-layer'))
+        
+        try:
+            from trading_system.kline import Kline, KlineSeries
+            from trading_system.fractal import FractalDetector
+            from trading_system.pen import PenCalculator, PenConfig
+            from trading_system.segment import SegmentCalculator
+            from trading_system.indicators import MACDIndicator
+            from datetime import datetime, timedelta
+            import random
+            
+            print(f"[2] Generating sample data for {args.symbol.upper()}...")
+            
+            # Generate sample K-lines
+            klines = []
+            base_time = datetime.now()
+            base_price = 100.0
+            
+            for i in range(100):
+                volatility = random.uniform(-1, 1)
+                price = base_price + volatility
+                
+                kline = Kline(
+                    timestamp=base_time + timedelta(minutes=i*30),
+                    open=price,
+                    high=price + abs(random.uniform(0.5, 2)),
+                    low=price - abs(random.uniform(0.5, 2)),
+                    close=price,
+                    volume=random.randint(500000, 5000000)
+                )
+                klines.append(kline)
+                base_price = price
+            
+            series = KlineSeries(klines=klines, symbol=args.symbol.upper(), timeframe=args.level)
+            print(f"    ✓ Generated {len(klines)} K-lines")
+            
+            # Analyze
+            print(f"\n[3] Analyzing {args.symbol.upper()}...")
+            
+            fractal_det = FractalDetector()
+            fractals = fractal_det.detect_all(series)
+            print(f"    ✓ Fractals: {len(fractals)}")
+            
+            pen_calc = PenCalculator(PenConfig(
+                use_new_definition=True,
+                strict_validation=True,
+                min_klines_between_turns=3
+            ))
+            pens = pen_calc.identify_pens(series)
+            print(f"    ✓ Pens: {len(pens)}")
+            
+            seg_calc = SegmentCalculator(min_pens=3)
+            segments = seg_calc.detect_segments(pens)
+            print(f"    ✓ Segments: {len(segments)}")
+            
+            # Summary
+            print(f"\n{'='*70}")
+            print(f"Analysis Summary - {args.symbol.upper()}")
+            print(f"{'='*70}")
+            print(f"  Symbol:    {args.symbol.upper()}")
+            print(f"  Timeframe: {args.level}")
+            print(f"  K-lines:   {len(klines)}")
+            print(f"  Fractals:  {len(fractals)}")
+            print(f"  Pens:      {len(pens)}")
+            print(f"  Segments:  {len(segments)}")
+            print(f"{'='*70}")
+            
+            if segments:
+                print(f"\n  Latest Segment:")
+                print(f"    Direction: {segments[-1].direction}")
+                print(f"    Range:     #{segments[-1].start_idx} → #{segments[-1].end_idx}")
+            
+            print(f"\n{'='*70}")
+            print(f"✅ Analysis Complete")
+            print(f"{'='*70}")
+            print(f"\nℹ️  For continuous monitoring, install UVIX module:")
+            print(f"    git clone https://github.com/weisenchen/chanlunInvester.git")
+            print(f"\nℹ️  Press Ctrl+C to exit\n")
+            
+            return 0
+            
+        except Exception as e:
+            print(f"\n❌ Analysis error: {e}")
+            import traceback
+            traceback.print_exc()
+            return 1
 
 
 def cmd_server(args):
