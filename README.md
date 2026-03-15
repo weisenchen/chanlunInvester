@@ -191,17 +191,28 @@ python3 examples/06_bsp1/main.py
 
 ---
 
-### 📊 Monitor Symbols
+### 📊 Monitor Symbols (Real-time Data)
 
 ```bash
-# Monitor any symbol (real-time analysis)
+# Monitor any US stock with Yahoo Finance data
 python3 launcher.py monitor UVIX --level 5m
 
-# Monitor with custom alert channel
-python3 launcher.py monitor AAPL --level 30m --alert telegram
+# Different timeframes
+python3 launcher.py monitor AAPL --level 30m
+python3 launcher.py monitor TSLA --level day
+
+# With alert channel
+python3 launcher.py monitor NVDA --level 5m --alert telegram
 ```
 
-**Note:** Full UVIX real-time monitoring requires the dedicated module. The monitor command will run analysis with sample data for any symbol.
+**Features:**
+- ✅ Real-time data from Yahoo Finance
+- ✅ ChanLun analysis (fractals, pens, segments)
+- ✅ Trading signal detection
+- ✅ Works with any US stock symbol
+- ✅ Automatic timeframe handling
+
+**Note:** For UVIX, the dedicated monitoring module provides continuous monitoring with alerts. The launcher command provides on-demand analysis.
 
 ---
 
