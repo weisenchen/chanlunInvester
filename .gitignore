@@ -1,53 +1,71 @@
-# Git Configuration for Trading System
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Security - NEVER push these to GitHub
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+# OpenClaw Identity & Memory (CRITICAL!)
+MEMORY.md
+SOUL.md
+USER.md
+AGENTS.md
+IDENTITY.md
+BOOTSTRAP.md
+HEARTBEAT.md
+TOOLS.md
+
+# Memory directory (personal learnings)
+memory/
+*.memory.md
+
+# Logs (may contain sensitive data)
+logs/
+*.log
+
+# Analysis results (real-time data)
+examples/uvix_analysis_result.json
+
+# Configuration with credentials
+config/*.local.yaml
+config/*.private.yaml
+config/secrets.yaml
+*.env
+.env
+.env.local
+
+# Telegram/Alert credentials
+TELEGRAM_*.md
+telegram_*.md
+
+# Personal notes
+*.private.md
+*.personal.md
+notes/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
 
 # Python
 __pycache__/
 *.py[cod]
-*$py.class
 *.so
-.Python
-venv/
-env/
-ENV/
-*.egg-info/
-dist/
-build/
 
-# Rust
-/target/
-**/*.rs.bk
-*.pdb
+# Git
+.git/
+.gitignore
 
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
-*~
+# Documentation (local only)
+GAP_ANALYSIS.md
+GAP_ANALYSIS_UPDATED.md
+GITHUB_PUSH_READY.md
+PUSH_NOW.sh
+PUSH_TO_GITHUB.md
+TELEGRAM_SETUP.md
 
-# OS
-.DS_Store
-Thumbs.db
-
-# Logs
-*.log
-logs/
-
-# Data
-*.csv
-*.json
-!config/*.json
-
-# Docker
-docker-compose.override.yml
-
-# Testing
-coverage/
-.coverage
-htmlcov/
-.pytest_cache/
-
-# Temporary
-tmp/
-temp/
-*.tmp
+# Test logs
+test_*.log
