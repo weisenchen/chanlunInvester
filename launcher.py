@@ -163,8 +163,81 @@ def cmd_backtest(args):
     return 0
 
 
+def fetch_yahoo_data(symbol: str, timeframe: str = '30m', count: int = 100):
+    """Fetch real-time data from Yahoo Finance"""
+    try:
+        import yfinance as yf
+        
+        print(f"\n[2] Fetching data from Yahoo Finance...")
+        print(f"    Symbol: {symbol.upper()}")
+        print(f"    Source: Yahoo Finance")
+        
+        # Create ticker
+        ticker = yf.Ticker(symbol.upper())
+        
+        # Get historical data based on timeframe
+        if timeframe == 'day' or timeframe == '1d':
+            period = '1mo'
+            interval = '1d'
+        elif timeframe == '5m':
+            period = '5d'
+            interval = '5m'
+        else:  # 30m
+            period = '1mo'
+            interval = '30m'
+        
+        # Fetch data
+        history = ticker.history(period=period, interval=interval)
+        
+        if len(history) == 0:
+            print(f"    ❌ No data found for {symbol.upper()}")
+            return None
+        
+        # Convert to Kline objects
+        from trading_system.kline import Kline, KlineSeries
+        from datetime import datetime
+        
+        klines = []
+        for idx, row in history.iterrows():
+            # Handle timezone-aware timestamps
+            if hasattr(idx, 'to_pydatetime'):
+                timestamp = idx.to_pydatetime()
+            else:
+                timestamp = idx
+            
+            kline = Kline(
+                timestamp=timestamp,
+                open=float(row['Open']),
+                high=float(row['High']),
+                low=float(row['Low']),
+                close=float(row['Close']),
+                volume=int(row['Volume']) if 'Volume' in row else 0
+            )
+            klines.append(kline)
+        
+        # Take last 'count' klines
+        if len(klines) > count:
+            klines = klines[-count:]
+        
+        series = KlineSeries(klines=klines, symbol=symbol.upper(), timeframe=timeframe)
+        
+        print(f"    ✓ Fetched {len(klines)} K-lines")
+        print(f"    Range: {history.index[0].strftime('%Y-%m-%d')} → {history.index[-1].strftime('%Y-%m-%d')}")
+        print(f"    Price: ${klines[-1].close:.2f}")
+        
+        return series
+        
+    except ImportError:
+        print(f"    ⚠️  yfinance not installed")
+        print(f"    Install: pip install yfinance")
+        return None
+    except Exception as e:
+        print(f"    ❌ Error fetching data: {e}")
+        return None
+
+
 def cmd_monitor(args):
-    """Monitor a symbol in real-time"""
+    """Monitor a symbol in real-time with Yahoo Finance data"""
     import subprocess
     
     print(f"\n{'='*70}")
@@ -179,8 +252,8 @@ def cmd_monitor(args):
     # Check if uvix_monitor.py exists (optional feature)
     monitor_script = Path(__file__).parent / 'examples' / 'uvix_monitor.py'
     
-    if monitor_script.exists():
-        print(f"\n[2] Launching monitor...")
+    if monitor_script.exists() and args.symbol.upper() == 'UVIX':
+        print(f"\n[2] Launching UVIX monitor...")
         print(f"    Script: {monitor_script}")
         print(f"\n{'='*70}")
         print(f"Real-time Monitoring Active")
@@ -219,53 +292,33 @@ def cmd_monitor(args):
             print(f"\n❌ Monitor error: {e}")
             return 1
     else:
-        # UVIX monitoring not installed - run regular analysis instead
-        print(f"\n⚠️  UVIX monitoring module not installed")
-        print(f"    Running single analysis instead...\n")
+        # Use Yahoo Finance for real-time data
+        print(f"\n[2] Using Yahoo Finance for real-time data...")
         
         # Import and run analysis
         sys.path.insert(0, str(Path(__file__).parent / 'python-layer'))
         
         try:
-            from trading_system.kline import Kline, KlineSeries
             from trading_system.fractal import FractalDetector
             from trading_system.pen import PenCalculator, PenConfig
             from trading_system.segment import SegmentCalculator
-            from trading_system.indicators import MACDIndicator
-            from datetime import datetime, timedelta
-            import random
             
-            print(f"[2] Generating sample data for {args.symbol.upper()}...")
+            # Fetch real data from Yahoo Finance
+            series = fetch_yahoo_data(args.symbol.upper(), args.level, count=100)
             
-            # Generate sample K-lines
-            klines = []
-            base_time = datetime.now()
-            base_price = 100.0
-            
-            for i in range(100):
-                volatility = random.uniform(-1, 1)
-                price = base_price + volatility
-                
-                kline = Kline(
-                    timestamp=base_time + timedelta(minutes=i*30),
-                    open=price,
-                    high=price + abs(random.uniform(0.5, 2)),
-                    low=price - abs(random.uniform(0.5, 2)),
-                    close=price,
-                    volume=random.randint(500000, 5000000)
-                )
-                klines.append(kline)
-                base_price = price
-            
-            series = KlineSeries(klines=klines, symbol=args.symbol.upper(), timeframe=args.level)
-            print(f"    ✓ Generated {len(klines)} K-lines")
+            if series is None:
+                print(f"\n⚠️  Could not fetch data for {args.symbol.upper()}")
+                print(f"    Please check symbol and try again")
+                return 1
             
             # Analyze
             print(f"\n[3] Analyzing {args.symbol.upper()}...")
             
             fractal_det = FractalDetector()
             fractals = fractal_det.detect_all(series)
-            print(f"    ✓ Fractals: {len(fractals)}")
+            top_fractals = [f for f in fractals if f.is_top]
+            bottom_fractals = [f for f in fractals if not f.is_top]
+            print(f"    ✓ Fractals: {len(fractals)} (Top: {len(top_fractals)}, Bottom: {len(bottom_fractals)})")
             
             pen_calc = PenCalculator(PenConfig(
                 use_new_definition=True,
@@ -273,35 +326,64 @@ def cmd_monitor(args):
                 min_klines_between_turns=3
             ))
             pens = pen_calc.identify_pens(series)
-            print(f"    ✓ Pens: {len(pens)}")
+            up_pens = [p for p in pens if p.is_up]
+            down_pens = [p for p in pens if p.is_down]
+            print(f"    ✓ Pens: {len(pens)} (Up: {len(up_pens)}, Down: {len(down_pens)})")
             
             seg_calc = SegmentCalculator(min_pens=3)
             segments = seg_calc.detect_segments(pens)
-            print(f"    ✓ Segments: {len(segments)}")
+            up_segs = [s for s in segments if s.is_up]
+            down_segs = [s for s in segments if s.is_down]
+            print(f"    ✓ Segments: {len(segments)} (Up: {len(up_segs)}, Down: {len(down_segs)})")
             
             # Summary
             print(f"\n{'='*70}")
-            print(f"Analysis Summary - {args.symbol.upper()}")
+            print(f"ChanLun Analysis Summary - {args.symbol.upper()}")
             print(f"{'='*70}")
-            print(f"  Symbol:    {args.symbol.upper()}")
-            print(f"  Timeframe: {args.level}")
-            print(f"  K-lines:   {len(klines)}")
-            print(f"  Fractals:  {len(fractals)}")
-            print(f"  Pens:      {len(pens)}")
-            print(f"  Segments:  {len(segments)}")
+            print(f"  Symbol:      {args.symbol.upper()}")
+            print(f"  Timeframe:   {args.level}")
+            print(f"  K-lines:     {len(series.klines)}")
+            print(f"  Fractals:    {len(fractals)}")
+            print(f"  Pens:        {len(pens)}")
+            print(f"  Segments:    {len(segments)}")
+            print(f"  Data Source: Yahoo Finance")
             print(f"{'='*70}")
             
             if segments:
                 print(f"\n  Latest Segment:")
-                print(f"    Direction: {segments[-1].direction}")
+                print(f"    Direction: {segments[-1].direction.upper()}")
                 print(f"    Range:     #{segments[-1].start_idx} → #{segments[-1].end_idx}")
+                print(f"    Price:     ${segments[-1].start_price:.2f} → ${segments[-1].end_price:.2f}")
+            
+            # Check for buy/sell signals
+            print(f"\n{'='*70}")
+            print(f"Trading Signals")
+            print(f"{'='*70}")
+            
+            if len(segments) >= 2:
+                last_seg = segments[-1]
+                prev_seg = segments[-2]
+                
+                if last_seg.direction == 'up' and prev_seg.direction == 'down':
+                    print(f"  🟢 Potential BUY signal")
+                    print(f"     Reason: Up segment after down segment")
+                    print(f"     Entry:  ${last_seg.start_price:.2f}")
+                elif last_seg.direction == 'down' and prev_seg.direction == 'up':
+                    print(f"  🔴 Potential SELL signal")
+                    print(f"     Reason: Down segment after up segment")
+                    print(f"     Entry:  ${last_seg.start_price:.2f}")
+                else:
+                    print(f"  ⚪ HOLD - No clear signal")
+                    print(f"     Current: {last_seg.direction.upper()} segment")
+            else:
+                print(f"  ⚪ HOLD - Insufficient data for signal")
             
             print(f"\n{'='*70}")
             print(f"✅ Analysis Complete")
             print(f"{'='*70}")
-            print(f"\nℹ️  For continuous monitoring, install UVIX module:")
-            print(f"    git clone https://github.com/weisenchen/chanlunInvester.git")
-            print(f"\nℹ️  Press Ctrl+C to exit\n")
+            print(f"\nℹ️  Data: Real-time from Yahoo Finance")
+            print(f"ℹ️  Update: Run command again for latest data")
+            print(f"ℹ️  Press Ctrl+C to exit\n")
             
             return 0
             
