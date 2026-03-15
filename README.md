@@ -56,47 +56,82 @@ A production-ready trading system that implements **pen theory (笔理论)** wit
 
 ## 📁 Project Structure
 
+**Total:** 67 files (~7.5 MB)
+
 ```
-chanlunInvester/
-├── Cargo.toml                # Rust workspace configuration
-├── docker-compose.yml        # Development Docker setup
-├── docker-compose.prod.yml   # Production Docker setup
-├── Dockerfile.rust           # Rust container build
-├── Dockerfile.python         # Python container build
+trading-system/
+├── README.md                 # Project overview
+├── SECURITY.md               # Security guidelines
+├── ARCHITECTURE.md           # System architecture
+├── DEVELOPMENT_PLAN.md       # Development roadmap
+├── QUICK_REFERENCE.md        # Quick reference
+├── GANTT_CHART.md           # Project timeline
+├── .gitignore                # Git ignore rules
+├── launcher.py               # CLI tool
 │
-├── rust-core/                # 🦀 Rust Trading Engine
+├── Cargo.toml                # Rust workspace config
+├── docker-compose.yml        # Docker setup
+├── docker-compose.prod.yml   # Production Docker
+├── Dockerfile.rust           # Rust Dockerfile
+├── Dockerfile.python         # Python Dockerfile
+│
+├── rust-core/                # 🦀 Rust Engine (11 files)
 │   ├── Cargo.toml
 │   └── src/
 │       ├── lib.rs           # Library root
 │       ├── main.rs          # Server binary
-│       ├── kline/           # K-line data structures
-│       ├── pen/             # Pen theory implementation
-│       ├── segment/         # Line segment division
-│       ├── indicators/      # MACD and other indicators
+│       ├── kline/           # K-line data
+│       ├── fractal/         # Fractal detection
+│       ├── pen/             # Pen theory
+│       ├── segment/         # Segment division
+│       ├── indicators/      # MACD indicators
 │       ├── health/          # Health monitoring
 │       └── grpc/            # gRPC service
 │
-├── python-layer/             # 🐍 Python Backup & Integration
+├── python-layer/             # 🐍 Python Layer (11 files)
 │   ├── pyproject.toml
 │   ├── requirements.txt
 │   └── trading_system/
 │       ├── __init__.py
-│       ├── kline/           # Python K-line (backup)
-│       ├── pen/             # Python pen theory (backup)
-│       ├── segment/         # Python segment (backup)
-│       └── indicators/      # Python indicators (TA-Lib)
+│       ├── kline/           # K-line backup
+│       ├── fractal/         # Fractal backup
+│       ├── pen/             # Pen backup
+│       ├── segment/         # Segment backup
+│       ├── center/          # Center detection
+│       └── indicators/      # Indicators
 │
 ├── proto/                    # Protocol Buffers
-│   └── trading.proto        # gRPC service definition
+│   └── trading.proto        # gRPC definition
 │
-├── config/                   # Configuration files
-│   ├── default.yaml         # System configuration
-│   └── macd_params.yaml     # MACD parameter presets
+├── config/                   # Configuration (5 files)
+│   ├── default.yaml         # System config
+│   ├── live.yaml            # Live trading
+│   ├── macd_params.yaml     # MACD params
+│   └── uvix_cron.yaml       # UVIX cron
 │
-└── scripts/                  # Automation scripts
-    ├── build.sh             # Build everything
-    ├── test.sh              # Run all tests
-    └── deploy.sh            # Docker deployment
+├── examples/                 # Examples (10 files)
+│   ├── 02_pen/              # Pen identification
+│   ├── 03_segment/          # Segment division
+│   ├── 05_divergence/       # Divergence
+│   ├── 06_bsp1/             # Type 1 BSP
+│   ├── 07_bsp2/             # Type 2 BSP
+│   ├── 08_bsp3/             # Type 3 BSP
+│   ├── 09_interval_set/     # Interval set
+│   ├── uvix_monitor.py      # UVIX monitor
+│   └── UVIX_MONITOR_README.md
+│
+├── tests/                    # Tests (4 files)
+│   ├── test_fractal.py
+│   ├── test_pen.py
+│   ├── test_segment.py
+│   └── test_integration.py
+│
+└── scripts/                  # Scripts (15 files)
+    ├── build.sh             # Build
+    ├── test.sh              # Test runner
+    ├── deploy.sh            # Deploy
+    ├── uvix_*.py            # UVIX monitoring
+    └── ...
 ```
 
 ## 🚀 Deployment & Usage
