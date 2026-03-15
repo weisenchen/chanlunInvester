@@ -12,6 +12,16 @@
 
 A production-ready trading system that implements **pen theory (笔理论)** with the new 3-K-line definition (新笔), strict line segment division (线段划分), and configurable MACD indicators. Built with a hybrid Rust + Python architecture for maximum performance and reliability.
 
+### 📊 Default Data Source: Yahoo Finance
+
+The system uses **Yahoo Finance** as the default data source for all market data:
+
+- ✅ **Real-time prices** for US stocks, ETFs, and cryptocurrencies
+- ✅ **Historical data** for backtesting and analysis
+- ✅ **Multiple timeframes**: 5m, 30m, daily, weekly, monthly
+- ✅ **No API key required** - free and unlimited
+- ✅ **Automatic integration** with all monitoring and analysis tools
+
 ### Key Features
 
 - ✅ **New Pen Definition**: 3 K-line minimum with strict fractal validation (新笔定义)
@@ -21,6 +31,7 @@ A production-ready trading system that implements **pen theory (笔理论)** wit
 - ✅ **Dual Architecture**: Rust primary + Python automatic failover
 - ✅ **Health Monitoring**: Continuous health checks with automatic switchover
 - ✅ **Buy/Sell Points**: All 3 types auto-detected (三类买卖点)
+- ✅ **Yahoo Finance Integration**: Default data source for real-time market data
 - ✅ **Docker Deployment**: Ready for development and production
 - ✅ **Security First**: Comprehensive .gitignore, no sensitive data in repo
 
@@ -55,6 +66,40 @@ A production-ready trading system that implements **pen theory (笔理论)** wit
 | **Integration Layer**  | 🐍 Python   | Flexibility, rapid iteration, ML libraries |
 | **Communication**      | gRPC       | Language-agnostic, health checks built-in  |
 | **Failover**           | Automatic  | Zero-downtime switching on failures        |
+
+## 📊 Data Source
+
+### Default: Yahoo Finance
+
+The system uses **Yahoo Finance** as the default and primary data source:
+
+**Why Yahoo Finance?**
+- ✅ **Free** - No API key or subscription required
+- ✅ **Real-time** - Live market data during trading hours
+- ✅ **Comprehensive** - US stocks, ETFs, indices, cryptocurrencies
+- ✅ **Historical** - Years of historical data for backtesting
+- ✅ **Multiple timeframes** - 1m, 5m, 30m, daily, weekly, monthly
+- ✅ **Easy to use** - Simple `yfinance` Python library
+
+**Supported Assets:**
+- US Stocks (AAPL, MSFT, TSLA, etc.)
+- ETFs (SPY, QQQ, UVIX, VIX, etc.)
+- Cryptocurrencies (BTC-USD, ETH-USD, etc.)
+- Indices (^GSPC, ^DJI, ^IXIC, etc.)
+- Futures and commodities
+
+**Configuration:**
+```yaml
+# config/default.yaml
+data:
+  provider: yahoo_finance  # Default data source
+  cache_enabled: false     # Real-time data
+  update_interval: 60      # Update every 60 seconds
+```
+
+No API keys or credentials needed - just start using it!
+
+---
 
 ## 📁 Project Structure
 
@@ -147,6 +192,23 @@ trading-system/
 
 ---
 
+### 📦 Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/weisenchen/chanlunInvester.git
+cd chanlunInvester
+
+# Install Python dependencies (includes yfinance for Yahoo Finance data)
+python3 -m venv venv
+source venv/bin/activate
+pip install -r python-layer/requirements.txt
+```
+
+**✅ Yahoo Finance is the default data source - no configuration needed!**
+
+---
+
 ### 🐳 Option 1: Docker (Recommended)
 
 ```bash
@@ -191,10 +253,27 @@ python3 examples/06_bsp1/main.py
 
 ---
 
-### 📊 Monitor Symbols (Real-time Data)
+### 📊 Data Source Configuration
+
+**Default:** Yahoo Finance (automatically configured)
 
 ```bash
-# Monitor any US stock with Yahoo Finance data
+# No configuration needed - works out of the box
+python3 launcher.py monitor UVIX
+```
+
+**Supported Symbols:**
+- US Stocks: AAPL, MSFT, TSLA, NVDA, etc.
+- ETFs: SPY, QQQ, UVIX, VIX, etc.
+- Cryptocurrencies: BTC-USD, ETH-USD, etc.
+- Indices: ^GSPC, ^DJI, ^IXIC, etc.
+
+---
+
+### 📊 Monitor Symbols
+
+```bash
+# Monitor any symbol (real-time Yahoo Finance data)
 python3 launcher.py monitor UVIX --level 5m
 
 # Different timeframes
@@ -206,7 +285,7 @@ python3 launcher.py monitor NVDA --level 5m --alert telegram
 ```
 
 **Features:**
-- ✅ Real-time data from Yahoo Finance
+- ✅ Real-time data from Yahoo Finance (default)
 - ✅ ChanLun analysis (fractals, pens, segments)
 - ✅ Trading signal detection
 - ✅ Works with any US stock symbol
