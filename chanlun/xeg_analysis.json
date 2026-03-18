@@ -1,0 +1,28 @@
+{
+  "timestamp": "2026-03-06T16:43:07.555444",
+  "symbol": "XEG.TO",
+  "levels": {
+    "30m": {
+      "current_price": 24.149999618530273,
+      "fractals_high": 10,
+      "fractals_low": 10,
+      "signals": [
+        {
+          "type": "buy2",
+          "name": "30m\u7ea7\u522b\u7b2c\u4e8c\u7c7b\u4e70\u70b9",
+          "price": 24.149999618530273,
+          "time": "2026-03-06 16:43:07.543436",
+          "confidence": "medium",
+          "description": "\u56de\u8c03\u4e0d\u7834\u524d\u4f4e 23.81, \u5f53\u524d\u4ef7 24.15"
+        }
+      ]
+    },
+    "1d": {
+      "current_price": 24.149999618530273,
+      "fractals_high": 2,
+      "fractals_low": 3,
+      "signals": []
+    }
+  },
+  "total_signals": 1
+}

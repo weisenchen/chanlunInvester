@@ -1,9 +1,15 @@
 """
 Trading System - Python Layer
 Backup implementation and integration layer for Rust+Python hybrid trading system.
+
+Features:
+- 🐍 Python implementation for flexibility
+- 🦀 Rust core integration (optional)
+- 📊 Universal stock monitoring
+- 🎯 Multi-level ChanLun analysis
 """
 
-__version__ = "0.2.0"  # Updated with center module
+__version__ = "0.3.0"  # Added universal monitor
 __author__ = "Weisen"
 
 from .kline import Kline, KlineSeries, TimeFrame
@@ -12,11 +18,15 @@ from .pen import PenCalculator, Pen, PenDirection, PenConfig
 from .segment import SegmentCalculator, Segment
 from .center import Center, CenterDetector
 from .indicators import MACD, MACDIndicator
+from .monitor import ChanLunMonitor, MonitorConfig, AnalysisResult
 
 __all__ = [
+    # Core
     "Kline",
     "KlineSeries",
     "TimeFrame",
+    
+    # Analysis
     "Fractal",
     "FractalDetector",
     "PenCalculator",
@@ -29,4 +39,9 @@ __all__ = [
     "CenterDetector",
     "MACD",
     "MACDIndicator",
+    
+    # Monitor (New!)
+    "ChanLunMonitor",
+    "MonitorConfig",
+    "AnalysisResult",
 ]
