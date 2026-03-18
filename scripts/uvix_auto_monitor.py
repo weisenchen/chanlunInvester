@@ -36,15 +36,21 @@ CONFIG = {
 
 
 def fetch_data(symbol='UVIX', timeframe='5m', count=100):
-    """获取实时数据"""
+    """获取实时数据 - 只使用 Yahoo Finance 真实数据"""
     ticker = yf.Ticker(symbol)
     
+    # 严格使用真实数据，不使用模拟数据
     if timeframe == '5m':
         history = ticker.history(period='5d', interval='5m')
     elif timeframe == '30m':
         history = ticker.history(period='1mo', interval='30m')
     else:
         history = ticker.history(period='3mo', interval='1d')
+    
+    # 检查数据有效性
+    if len(history) == 0:
+        print(f"    ❌ 错误：无法获取 {symbol} 的实时数据")
+        return None
     
     klines = []
     for idx, row in history.iterrows():
@@ -53,18 +59,40 @@ def fetch_data(symbol='UVIX', timeframe='5m', count=100):
         else:
             timestamp = idx
         
+        # 验证价格数据有效性
+        open_price = float(row['Open'])
+        high_price = float(row['High'])
+        low_price = float(row['Low'])
+        close_price = float(row['Close'])
+        
+        # 跳过无效数据
+        if open_price <= 0 or close_price <= 0:
+            continue
+        
         kline = Kline(
             timestamp=timestamp,
-            open=float(row['Open']),
-            high=float(row['High']),
-            low=float(row['Low']),
-            close=float(row['Close']),
+            open=open_price,
+            high=high_price,
+            low=low_price,
+            close=close_price,
             volume=int(row['Volume']) if 'Volume' in row else 0
         )
         klines.append(kline)
     
+    if len(klines) == 0:
+        print(f"    ❌ 错误：{symbol} 没有有效的价格数据")
+        return None
+    
     if len(klines) > count:
         klines = klines[-count:]
+    
+    # 打印当前真实价格
+    current_price = klines[-1].close
+    today_low = min(k.low for k in klines if k.timestamp.date() == datetime.now().date())
+    today_high = max(k.high for k in klines if k.timestamp.date() == datetime.now().date())
+    
+    print(f"    ✓ 当前价格：${current_price:.2f}")
+    print(f"    ✓ 今日范围：${today_low:.2f} - ${today_high:.2f}")
     
     return KlineSeries(klines=klines, symbol=symbol, timeframe=timeframe)
 
