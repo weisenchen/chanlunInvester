@@ -70,3 +70,7 @@ TELEGRAM_SETUP.md
 # Test logs
 test_*.log
 python-layer/venv/
+
+# OpenClaw workspace
+.openclaw/
+
