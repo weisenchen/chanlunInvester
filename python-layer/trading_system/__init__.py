@@ -19,6 +19,10 @@ from .segment import SegmentCalculator, Segment
 from .center import Center, CenterDetector
 from .indicators import MACD, MACDIndicator
 from .monitor import ChanLunMonitor, MonitorConfig, AnalysisResult
+from .backtest import BacktestEngine, BacktestConfig, BacktestResult, Trade
+from .telegram_bot import ChanLunBot, send_alert, send_analysis_report
+
+__version__ = "0.4.0"  # Added backtest and Telegram bot
 
 __all__ = [
     # Core
@@ -40,8 +44,19 @@ __all__ = [
     "MACD",
     "MACDIndicator",
     
-    # Monitor (New!)
+    # Monitor
     "ChanLunMonitor",
     "MonitorConfig",
     "AnalysisResult",
+    
+    # Backtest (New!)
+    "BacktestEngine",
+    "BacktestConfig",
+    "BacktestResult",
+    "Trade",
+    
+    # Telegram Bot (New!)
+    "ChanLunBot",
+    "send_alert",
+    "send_analysis_report",
 ]
