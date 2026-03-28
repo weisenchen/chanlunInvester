@@ -74,3 +74,6 @@ python-layer/venv/
 # OpenClaw workspace
 .openclaw/
 
+
+# OpenClaw workspace
+.openclaw/
