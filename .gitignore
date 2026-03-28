@@ -16,64 +16,133 @@ TOOLS.md
 memory/
 *.memory.md
 
-# Logs (may contain sensitive data)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Logs - ALL log files (CRITICAL!)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 logs/
 *.log
+test_*.log
 
-# Analysis results (real-time data)
-examples/uvix_analysis_result.json
-
-# Configuration with credentials
-config/*.local.yaml
-config/*.private.yaml
-config/secrets.yaml
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Environment & Configuration (CRITICAL!)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 *.env
 .env
 .env.local
+.env.*
+config/*.local.yaml
+config/*.private.yaml
+config/secrets.yaml
+config/*.secret
+*.secret
+*.key
+*.pem
+*.crt
 
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # Telegram/Alert credentials
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 TELEGRAM_*.md
 telegram_*.md
+*.telegram.*
+telegram_*
 
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # Personal notes
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 *.private.md
 *.personal.md
 notes/
+*.note
+notes_*
 
-# OS files
-.DS_Store
-Thumbs.db
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Python cache & build artifacts
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.so
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# IDE
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Virtual environments
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+python-layer/venv/
+.env/
+.venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# IDE & Editor files
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
+.DS_Store
+Thumbs.db
+*.sublime-*
 
-# Python
-__pycache__/
-*.py[cod]
-*.so
-
-# Git
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Git files
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 .git/
 .gitignore
 
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # Documentation (local only)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 GAP_ANALYSIS.md
 GAP_ANALYSIS_UPDATED.md
 GITHUB_PUSH_READY.md
 PUSH_NOW.sh
 PUSH_TO_GITHUB.md
 TELEGRAM_SETUP.md
+DEPLOYMENT_LOCATION.md
+STATUS_CHECK_REPORT.md
+SCHEDULED_JOBS_DIAGNOSIS.md
 
-# Test logs
-test_*.log
-python-layer/venv/
-
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # OpenClaw workspace
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 .openclaw/
+*.openclaw.*
 
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Analysis results (real-time data)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+examples/uvix_analysis_result.json
+*.analysis.json
+*.result.json
 
-# OpenClaw workspace
-.openclaw/
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Temporary files
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+*.tmp
+*.temp
+*.bak
+*.backup
+*.old
+tmp/
+temp/
