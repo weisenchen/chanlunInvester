@@ -27,6 +27,7 @@ from trading_system.indicators import MACDIndicator
 # Configuration
 TELEGRAM_CHAT_ID = "8365377574"
 ALERT_LOG = "/home/wei/.openclaw/workspace/chanlunInvester/alerts.log"
+OPENCLAW_PATH = "/home/linuxbrew/.linuxbrew/bin/openclaw"
 
 # Symbols to monitor
 SYMBOLS = [
@@ -95,6 +96,8 @@ def detect_buy_sell_points(series, fractals, pens, segments, macd_data, level="3
     """
     Detect ChanLun buy/sell points
     缠论买卖点检测
+    
+    修复：添加趋势方向过滤，避免买卖点同时出现（缠论走势类型互斥原理）
     """
     signals = []
     
@@ -107,23 +110,34 @@ def detect_buy_sell_points(series, fractals, pens, segments, macd_data, level="3
     
     current_price = series.klines[-1].close
     
-    # Thresholds by level
+    # ========== 获取当前趋势方向（关键修复）==========
+    # 根据最后一笔的方向判断当前趋势
+    last_pen = pens[-1]
+    current_trend = 'up' if last_pen.is_up else 'down'
+    
+    # 获取倒数第二笔（用于确认趋势延续）
+    prev_pen = pens[-2] if len(pens) >= 2 else None
+    
+    # Thresholds by level (优化：收紧阈值，避免震荡市误触发)
     thresholds = {
-        '5m': {'bsp2': 0.015, 'bsp1': 2.0},
-        '30m': {'bsp2': 0.025, 'bsp1': 3.0},
-        '1d': {'bsp2': 0.05, 'bsp1': 5.0}
+        '5m': {'bsp2': 0.01, 'bsp1': 2.0, 'min_distance': 0.005},
+        '30m': {'bsp2': 0.015, 'bsp1': 3.0, 'min_distance': 0.008},
+        '1d': {'bsp2': 0.03, 'bsp1': 5.0, 'min_distance': 0.01}
     }
     thresh = thresholds.get(level, thresholds['30m'])
     
     # ========== Buy Point 2 (第二类买点) ==========
-    # 回调不破前低
-    if len(bottom_fractals) >= 2:
+    # 缠论定义：下跌趋势结束 + 第一类买点确认 + 反弹 + 回调不破前低
+    # 关键：当前必须在上涨趋势的回调中（下跌笔）
+    if len(bottom_fractals) >= 2 and current_trend == 'up':
         last_low = bottom_fractals[-1]
         prev_low = bottom_fractals[-2]
         
+        # 回调不破前低（核心条件）
         if last_low.price > prev_low.price:
             distance = (current_price - last_low.price) / last_low.price
-            if distance <= thresh['bsp2']:
+            # 添加最小距离过滤，避免太近触发
+            if distance <= thresh['bsp2'] and distance >= thresh.get('min_distance', 0):
                 signals.append({
                     'type': 'buy2',
                     'name': f'{level}级别第二类买点',
@@ -158,14 +172,17 @@ def detect_buy_sell_points(series, fractals, pens, segments, macd_data, level="3
                     })
     
     # ========== Sell Point 2 (第二类卖点) ==========
-    # 反弹不过前高
-    if len(top_fractals) >= 2:
+    # 缠论定义：上涨趋势结束 + 第一类卖点确认 + 回落 + 反弹不过前高
+    # 关键：当前必须在下跌趋势的反弹中（上涨笔）
+    if len(top_fractals) >= 2 and current_trend == 'down':
         last_high = top_fractals[-1]
         prev_high = top_fractals[-2]
         
+        # 反弹不过前高（核心条件）
         if last_high.price < prev_high.price:
             distance = (last_high.price - current_price) / last_high.price
-            if distance <= thresh['bsp2']:
+            # 添加最小距离过滤，避免太近触发
+            if distance <= thresh['bsp2'] and distance >= thresh.get('min_distance', 0):
                 signals.append({
                     'type': 'sell2',
                     'name': f'{level}级别第二类卖点',
@@ -173,6 +190,25 @@ def detect_buy_sell_points(series, fractals, pens, segments, macd_data, level="3
                     'confidence': 'medium',
                     'description': f'反弹不过前高 {prev_high.price:.2f}, 当前价 {current_price:.2f}'
                 })
+    
+    # ========== 信号互斥检查（关键修复）==========
+    # 缠论原理：同一级别同一时间只能有一个主导趋势
+    # 如果同时出现买卖点，只保留置信度更高的信号
+    buy_signals = [s for s in signals if s['type'].startswith('buy')]
+    sell_signals = [s for s in signals if s['type'].startswith('sell')]
+    
+    if buy_signals and sell_signals:
+        # 计算各自信号强度
+        buy_confidence = sum(1 if s['confidence'] == 'high' else 0.5 for s in buy_signals)
+        sell_confidence = sum(1 if s['confidence'] == 'high' else 0.5 for s in sell_signals)
+        
+        # 只保留更强的一方
+        if buy_confidence >= sell_confidence:
+            signals = buy_signals
+        else:
+            signals = sell_signals
+        
+        print(f"    ⚠️ 买卖点冲突检测：保留 {'买点' if buy_confidence >= sell_confidence else '卖点'} (买:{buy_confidence:.1f} vs 卖:{sell_confidence:.1f})")
     
     return signals
 
@@ -214,8 +250,12 @@ def send_telegram_alert(symbol: str, signals: list, level: str):
             # Use single quotes and escape properly
             import shlex
             safe_message = message.replace("'", "'\"'\"'")
-            cmd = f"openclaw message send --target 'telegram:{TELEGRAM_CHAT_ID}' -m '{safe_message}'"
-            result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=10)
+            # Set environment to ensure correct node and clear problematic NODE_OPTIONS
+            env = os.environ.copy()
+            env['PATH'] = '/home/linuxbrew/.linuxbrew/bin:' + env.get('PATH', '')
+            env.pop('NODE_OPTIONS', None)  # Remove NODE_OPTIONS to avoid conflicts
+            cmd = f"{OPENCLAW_PATH} message send --target 'telegram:{TELEGRAM_CHAT_ID}' -m '{safe_message}'"
+            result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=10, env=env)
             
             if result.returncode == 0:
                 print(f"✅ Telegram alert sent: {symbol} {signal['type']}")
