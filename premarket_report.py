@@ -15,6 +15,7 @@ import subprocess
 # 配置
 TELEGRAM_CHAT_ID = "8365377574"
 WORKSPACE = "/home/wei/.openclaw/workspace/chanlunInvester"
+OPENCLAW_PATH = "/home/linuxbrew/.linuxbrew/bin/openclaw"
 SYMBOLS = {
     'UVIX': {'name': 'UVIX', 'desc': '波动率指数'},
     'XEG.TO': {'name': 'XEG.TO', 'desc': '加拿大能源 ETF'},
@@ -183,8 +184,12 @@ def send_telegram_alert(report_content):
         message = f"{summary}\n\n📄 完整报告：premarket_{datetime.now().strftime('%Y-%m-%d')}.md"
         
         # 使用 openclaw message 命令发送 (使用 -m 参数)
-        cmd = f'openclaw message send --target "telegram:{TELEGRAM_CHAT_ID}" -m "{message}"'
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+        # Set environment to ensure correct node and clear problematic NODE_OPTIONS
+        env = os.environ.copy()
+        env['PATH'] = '/home/linuxbrew/.linuxbrew/bin:' + env.get('PATH', '')
+        env.pop('NODE_OPTIONS', None)  # Remove NODE_OPTIONS to avoid conflicts
+        cmd = f'{OPENCLAW_PATH} message send --target "telegram:{TELEGRAM_CHAT_ID}" -m "{message}"'
+        result = subprocess.run(cmd, shell=True, capture_output=True, text=True, env=env)
         
         if result.returncode == 0:
             print(f"✅ Telegram 消息已发送")

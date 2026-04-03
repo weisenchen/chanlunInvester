@@ -28,6 +28,11 @@ from trading_system.indicators import MACDIndicator
 TELEGRAM_CHAT_ID = "8365377574"
 ALERT_LOG = "/home/wei/.openclaw/workspace/chanlunInvester/alerts.log"
 OPENCLAW_PATH = "/home/linuxbrew/.linuxbrew/bin/openclaw"
+ALERT_STATE_FILE = "/home/wei/.openclaw/workspace/chanlunInvester/.alert_state.json"
+
+# Anti-spam settings (防重复警报设置)
+MIN_PRICE_CHANGE = 0.003  # 最小价格变化 0.3% 才触发新警报
+SILENCE_PERIOD_MINUTES = 60  # 同一信号静默期 60 分钟
 
 # Symbols to monitor
 SYMBOLS = [
@@ -213,12 +218,104 @@ def detect_buy_sell_points(series, fractals, pens, segments, macd_data, level="3
     return signals
 
 
+def load_alert_state():
+    """Load alert state from file (价格变化和去重状态)"""
+    if os.path.exists(ALERT_STATE_FILE):
+        try:
+            with open(ALERT_STATE_FILE, 'r') as f:
+                return json.load(f)
+        except:
+            pass
+    return {"alerts": {}}
+
+
+def save_alert_state(state):
+    """Save alert state to file"""
+    try:
+        with open(ALERT_STATE_FILE, 'w') as f:
+            json.dump(state, f, indent=2, default=str)
+    except Exception as e:
+        print(f"⚠️ Failed to save alert state: {e}")
+
+
+def should_send_alert(symbol: str, signal_type: str, level: str, current_price: float) -> bool:
+    """
+    Check if alert should be sent (防重复警报检查)
+    
+    Returns True if:
+    - First alert for this signal
+    - Price changed significantly (> MIN_PRICE_CHANGE)
+    - Silence period has passed
+    """
+    state = load_alert_state()
+    now = datetime.now()
+    
+    # Create unique key for this signal
+    key = f"{symbol}:{signal_type}:{level}"
+    
+    if key in state["alerts"]:
+        last_alert = state["alerts"][key]
+        last_price = last_alert.get("price", 0)
+        last_time = datetime.fromisoformat(last_alert["time"])
+        
+        # Check price change
+        price_change = abs(current_price - last_price) / last_price if last_price > 0 else 0
+        if price_change < MIN_PRICE_CHANGE:
+            print(f"    ⏭️ Skip: 价格变化 {price_change*100:.2f}% < {MIN_PRICE_CHANGE*100:.1f}% 阈值")
+            return False
+        
+        # Check silence period
+        minutes_since = (now - last_time).total_seconds() / 60
+        if minutes_since < SILENCE_PERIOD_MINUTES:
+            print(f"    ⏭️ Skip: 静默期剩余 {SILENCE_PERIOD_MINUTES - minutes_since:.0f} 分钟")
+            return False
+        
+        print(f"    ✅ 价格变化 {price_change*100:.2f}% > {MIN_PRICE_CHANGE*100:.1f}%，允许警报")
+    
+    return True
+
+
+def update_alert_state(symbol: str, signal_type: str, level: str, price: float):
+    """Update alert state after sending"""
+    state = load_alert_state()
+    key = f"{symbol}:{signal_type}:{level}"
+    
+    state["alerts"][key] = {
+        "price": price,
+        "time": datetime.now().isoformat(),
+        "symbol": symbol,
+        "signal_type": signal_type,
+        "level": level
+    }
+    
+    # Cleanup old alerts (older than 24 hours)
+    cutoff = datetime.now() - timedelta(hours=24)
+    keys_to_remove = []
+    for k, v in state["alerts"].items():
+        try:
+            alert_time = datetime.fromisoformat(v["time"])
+            if alert_time < cutoff:
+                keys_to_remove.append(k)
+        except:
+            pass
+    
+    for k in keys_to_remove:
+        del state["alerts"][k]
+    
+    save_alert_state(state)
+
+
 def send_telegram_alert(symbol: str, signals: list, level: str):
-    """Send Telegram alert via OpenClaw message tool"""
+    """Send Telegram alert via OpenClaw message tool with anti-spam protection"""
     if not signals:
         return
     
     for signal in signals:
+        # Anti-spam check (防重复警报检查)
+        signal_type = signal['type'].replace(' (背驰)', '')  # Normalize type
+        if not should_send_alert(symbol, signal_type, level, signal['price']):
+            continue
+        
         emoji = {
             'buy1': '🟢',
             'buy2': '🟢',
@@ -226,7 +323,7 @@ def send_telegram_alert(symbol: str, signals: list, level: str):
             'sell1': '🔴',
             'sell2': '🔴',
             'sell3': '🔴'
-        }.get(signal['type'], '⚪')
+        }.get(signal['type'].split()[0], '⚪')
         
         # Fix: Use USD prefix instead of $ to avoid shell variable expansion
         price_str = f"USD {signal['price']:.2f}"
@@ -245,20 +342,19 @@ def send_telegram_alert(symbol: str, signals: list, level: str):
         with open(ALERT_LOG, 'a') as f:
             f.write(f"{datetime.now().isoformat()} - {emoji} {symbol} {signal['name']} @ {price_str}\n")
         
-        # Send Telegram message using heredoc to avoid shell escaping issues
+        # Send Telegram message
         try:
-            # Use single quotes and escape properly
-            import shlex
             safe_message = message.replace("'", "'\"'\"'")
-            # Set environment to ensure correct node and clear problematic NODE_OPTIONS
             env = os.environ.copy()
             env['PATH'] = '/home/linuxbrew/.linuxbrew/bin:' + env.get('PATH', '')
-            env.pop('NODE_OPTIONS', None)  # Remove NODE_OPTIONS to avoid conflicts
+            env.pop('NODE_OPTIONS', None)
             cmd = f"{OPENCLAW_PATH} message send --target 'telegram:{TELEGRAM_CHAT_ID}' -m '{safe_message}'"
             result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=10, env=env)
             
             if result.returncode == 0:
                 print(f"✅ Telegram alert sent: {symbol} {signal['type']}")
+                # Update state after successful send
+                update_alert_state(symbol, signal_type, level, signal['price'])
             else:
                 print(f"⚠️ Telegram send failed: {result.stderr}")
         except Exception as e:
