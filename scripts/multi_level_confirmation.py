@@ -69,8 +69,7 @@ LEVEL_CONFIG = {
 # 监控标的
 SYMBOLS = [
     # UVIX 已移除 (用户要求取消)
-    {'symbol': 'XEG.TO', 'name': '加拿大能源 ETF', 'levels': ['1d', '30m']},
-    {'symbol': 'CVE.TO', 'name': 'Cenovus Energy', 'levels': ['1d', '30m']},
+    # XEG.TO, CVE.TO 已移除 (用户要求取消)
     {'symbol': 'CNQ.TO', 'name': 'Canadian Natural Resources', 'levels': ['1d', '30m']},
     {'symbol': 'PAAS.TO', 'name': 'Pan American Silver', 'levels': ['1d', '30m']},
     {'symbol': 'TECK', 'name': 'Teck Resources Limited', 'levels': ['1d', '30m']},
