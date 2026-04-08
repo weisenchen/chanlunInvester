@@ -44,6 +44,7 @@ SYMBOLS = [
     {'symbol': 'TECK', 'name': 'Teck Resources Limited', 'levels': ['30m', '1d']},
     # 美股
     {'symbol': 'TEL', 'name': 'TE Connectivity (美股)', 'levels': ['30m', '1d']},
+    {'symbol': 'GOOG', 'name': 'Alphabet/Google (美股)', 'levels': ['1w', '1d']},
 ]
 
 def fetch_yahoo_data(symbol: str, timeframe: str = '30m', count: int = 100):
@@ -58,7 +59,13 @@ def fetch_yahoo_data(symbol: str, timeframe: str = '30m', count: int = 100):
         elif timeframe == '5m':
             period = '5d'
             interval = '5m'
-        else:  # 30m
+        elif timeframe == '30m':
+            period = '10d'
+            interval = '30m'
+        elif timeframe == '1w' or timeframe == 'week':
+            period = '1y'
+            interval = '1wk'
+        else:  # default 30m
             period = '10d'
             interval = '30m'
         

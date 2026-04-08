@@ -111,6 +111,7 @@ e47bd33 fix: 修复买卖点同时出现的问题
 - [ ] 16:00 收盘报告
 - [ ] 跟踪 PAAS.TO 背驰买点验证
 - [x] ✅ 新增 TEL 美股监控 (30m+1d 联动)
+- [x] ✅ 新增 GOOG 美股监控 (1w+1d 联动)
 
 ### 中优先级
 - [ ] 完善第三类买卖点逻辑
@@ -142,20 +143,24 @@ e47bd33 fix: 修复买卖点同时出现的问题
 2. **Phase 5 进度**: 整体 80%，背驰量化 95% 接近完成
 3. **昨日表现**: 17 条警报，0 矛盾信号，系统运行良好
 4. **今日重点**: 周三开盘监控，验证 PAAS.TO 背驰买点
-5. **新增功能**: ✅ TEL 美股 (NYSE) 30m+1d 联动监控已配置完成
+5. **新增功能**: 
+   - ✅ TEL 美股 (NYSE) 30m+1d 联动监控
+   - ✅ GOOG 美股 (NASDAQ) 1w+1d 联动监控
 6. **下一步**: 4/15 前完成背驰量化模块，进入中枢优化收尾
 
 ---
 
 ## 📌 技术备注
 
-### 监控标的 (6 个)
+### 监控标的 (8 个)
 - UVIX (波动率 ETF)
 - XEG.TO (加拿大能源 ETF)
 - CVE.TO (Cenovus Energy)
 - CNQ.TO (Canadian Natural Resources)
 - PAAS.TO (Pan American Silver)
 - TECK (Teck Resources)
+- TEL (美股 - TE Connectivity)
+- GOOG (美股 - Alphabet/Google)
 
 ### 系统架构
 - **核心引擎**: Rust 🦀 (高性能计算)

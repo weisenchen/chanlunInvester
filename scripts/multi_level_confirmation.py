@@ -40,6 +40,12 @@ CONFIRMATION_STATE_FILE = "/home/wei/.openclaw/workspace/chanlunInvester/.confir
 
 # 级别递归配置
 LEVEL_CONFIG = {
+    '1w': {
+        'child_level': '1d',
+        'weight': 4.0,
+        'divergence_threshold': 0.35,
+        'confirmation_window_hours': 168,  # 1 周内需要次级别确认
+    },
     '1d': {
         'child_level': '30m',
         'weight': 3.0,
@@ -70,6 +76,7 @@ SYMBOLS = [
     {'symbol': 'TECK', 'name': 'Teck Resources Limited', 'levels': ['1d', '30m']},
     # 美股
     {'symbol': 'TEL', 'name': 'TE Connectivity (美股)', 'levels': ['1d', '30m']},
+    {'symbol': 'GOOG', 'name': 'Alphabet/Google (美股)', 'levels': ['1w', '1d']},
 ]
 
 
@@ -140,6 +147,8 @@ class MultiLevelDivergenceDetector:
                 '5m': ('5d', '5m'),
                 '30m': ('10d', '30m'),
                 '1d': ('60d', '1d'),
+                '1w': ('2y', '1wk'),
+                'week': ('2y', '1wk'),
             }
             
             period, interval = period_map.get(timeframe, ('10d', '30m'))
