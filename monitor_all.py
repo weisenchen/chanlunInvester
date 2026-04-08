@@ -42,6 +42,8 @@ SYMBOLS = [
     {'symbol': 'CNQ.TO', 'name': 'Canadian Natural Resources', 'levels': ['30m', '1d']},
     {'symbol': 'PAAS.TO', 'name': 'Pan American Silver', 'levels': ['30m', '1d']},
     {'symbol': 'TECK', 'name': 'Teck Resources Limited', 'levels': ['30m', '1d']},
+    # 美股
+    {'symbol': 'TEL', 'name': 'TE Connectivity (美股)', 'levels': ['30m', '1d']},
 ]
 
 def fetch_yahoo_data(symbol: str, timeframe: str = '30m', count: int = 100):

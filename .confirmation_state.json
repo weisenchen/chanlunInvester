@@ -1,0 +1,61 @@
+{
+  "UVIX:1d": {
+    "symbol": "UVIX",
+    "parent_level": "1d",
+    "child_level": "30m",
+    "stage": "waiting",
+    "parent_divergence": null,
+    "child_bsp1": null,
+    "child_bsp2": null,
+    "created_at": "2026-04-06 23:10:33.930595",
+    "updated_at": "2026-04-06 23:10:33.930598",
+    "confirmed_price": null,
+    "notes": ""
+  },
+  "UVIX:30m": {
+    "symbol": "UVIX",
+    "parent_level": "30m",
+    "child_level": "5m",
+    "stage": "waiting",
+    "parent_divergence": null,
+    "child_bsp1": null,
+    "child_bsp2": null,
+    "created_at": "2026-04-06 23:10:33.930606",
+    "updated_at": "2026-04-06 23:10:33.930607",
+    "confirmed_price": null,
+    "notes": ""
+  },
+  "XEG.TO:1d": {
+    "symbol": "XEG.TO",
+    "parent_level": "1d",
+    "child_level": "30m",
+    "stage": "waiting",
+    "parent_divergence": null,
+    "child_bsp1": null,
+    "child_bsp2": null,
+    "created_at": "2026-04-06 23:10:34.198598",
+    "updated_at": "2026-04-06 23:10:34.198601",
+    "confirmed_price": null,
+    "notes": ""
+  },
+  "CVE.TO:1d": {
+    "symbol": "CVE.TO",
+    "parent_level": "1d",
+    "child_level": "30m",
+    "stage": "parent_divergence",
+    "parent_divergence": {
+      "symbol": "CVE.TO",
+      "level": "1d",
+      "signal_type": "sell",
+      "strength": 0.8349794461881314,
+      "price": 32.95000076293945,
+      "timestamp": "2026-04-06 23:10:34.300437"
+    },
+    "child_bsp1": null,
+    "child_bsp2": null,
+    "created_at": "2026-04-06 23:10:34.378847",
+    "updated_at": "2026-04-06 23:10:34.378850",
+    "confirmed_price": null,
+    "notes": ""
+  }
+}
