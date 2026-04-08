@@ -68,7 +68,7 @@ LEVEL_CONFIG = {
 
 # 监控标的
 SYMBOLS = [
-    {'symbol': 'UVIX', 'name': '波动率指数', 'levels': ['1d', '30m', '5m']},
+    # UVIX 已移除 (用户要求取消)
     {'symbol': 'XEG.TO', 'name': '加拿大能源 ETF', 'levels': ['1d', '30m']},
     {'symbol': 'CVE.TO', 'name': 'Cenovus Energy', 'levels': ['1d', '30m']},
     {'symbol': 'CNQ.TO', 'name': 'Canadian Natural Resources', 'levels': ['1d', '30m']},

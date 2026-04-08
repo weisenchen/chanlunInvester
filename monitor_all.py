@@ -36,7 +36,7 @@ SILENCE_PERIOD_MINUTES = 60  # 同一信号静默期 60 分钟
 
 # Symbols to monitor
 SYMBOLS = [
-    {'symbol': 'UVIX', 'name': '波动率指数', 'levels': ['5m', '30m']},
+    # UVIX 已移除 (用户要求取消)
     {'symbol': 'XEG.TO', 'name': '加拿大能源 ETF', 'levels': ['30m', '1d']},
     {'symbol': 'CVE.TO', 'name': 'Cenovus Energy', 'levels': ['30m', '1d']},
     {'symbol': 'CNQ.TO', 'name': 'Canadian Natural Resources', 'levels': ['30m', '1d']},

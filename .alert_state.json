@@ -1,12 +1,5 @@
 {
   "alerts": {
-    "XEG.TO:sell2:30m": {
-      "price": 27.1200008392334,
-      "time": "2026-04-07T12:00:07.081608",
-      "symbol": "XEG.TO",
-      "signal_type": "sell2",
-      "level": "30m"
-    },
     "TECK:buy2:30m": {
       "price": 51.92499923706055,
       "time": "2026-04-07T12:30:08.226263",
@@ -28,13 +21,6 @@
       "signal_type": "sell2",
       "level": "30m"
     },
-    "CNQ.TO:sell2:30m": {
-      "price": 68.18000030517578,
-      "time": "2026-04-07T12:00:11.582883",
-      "symbol": "CNQ.TO",
-      "signal_type": "sell2",
-      "level": "30m"
-    },
     "UVIX:buy2:5m": {
       "price": 8.589900016784668,
       "time": "2026-04-07T14:00:07.084053",
@@ -43,8 +29,8 @@
       "level": "5m"
     },
     "UVIX:sell2:5m": {
-      "price": 8.5649995803833,
-      "time": "2026-04-07T15:30:06.965138",
+      "price": 7.070000171661377,
+      "time": "2026-04-08T11:30:06.439817",
       "symbol": "UVIX",
       "signal_type": "sell2",
       "level": "5m"
@@ -69,6 +55,13 @@
       "symbol": "UVIX",
       "signal_type": "buy1",
       "level": "5m"
+    },
+    "PAAS.TO:buy2:30m": {
+      "price": 79.81999969482422,
+      "time": "2026-04-08T12:30:07.683808",
+      "symbol": "PAAS.TO",
+      "signal_type": "buy2",
+      "level": "30m"
     }
   }
 }
