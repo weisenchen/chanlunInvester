@@ -100,7 +100,7 @@ Phase 6-7: ✅ 已完成
 
 ---
 
-## 🔄 监控标的列表 (10 个)
+## 🔄 监控标的列表 (11 个)
 
 ### 加拿大股票 (3)
 | 标的 | 描述 | 今日状态 |
@@ -109,7 +109,7 @@ Phase 6-7: ✅ 已完成
 | PAAS.TO | Pan American Silver | 🔄 多空震荡 (6 条信号) |
 | TECK | Teck Resources | 🔄 多空交替 |
 
-### 美国股票 (5)
+### 美国股票 (6)
 | 标的 | 描述 | 今日状态 |
 |------|------|----------|
 | TEL | TE Connectivity | 🟢 买 2 延续 |
@@ -117,6 +117,7 @@ Phase 6-7: ✅ 已完成
 | INTC | Intel Corporation | 🔄 日内震荡 |
 | EOSE | Eos Energy Enterprises | 🔴 卖 2 (首信号) |
 | **BABA** | **Alibaba Group** | 🟢 **买 2 (首信号)** |
+| **RKLB** | **Rocket Lab USA** | ⚪ **新增** (日线 +30m) |
 
 ---
 

@@ -34,6 +34,11 @@ ALERT_STATE_FILE = "/home/wei/.openclaw/workspace/chanlunInvester/.alert_state.j
 MIN_PRICE_CHANGE = 0.003  # 最小价格变化 0.3% 才触发新警报
 SILENCE_PERIOD_MINUTES = 60  # 同一信号静默期 60 分钟
 
+# 多级别共振过滤 (Multi-Level Resonance Filter)
+# 只有多级别共振确认时才发送警报，减少噪音
+ENABLE_RESONANCE_FILTER = True  # 启用共振过滤
+RESONANCE_MIN_CONFIDENCE = 0.75  # 最低置信度要求 (75%)
+
 # Symbols to monitor
 SYMBOLS = [
     # UVIX 已移除 (用户要求取消)
@@ -317,6 +322,93 @@ def update_alert_state(symbol: str, signal_type: str, level: str, price: float):
     save_alert_state(state)
 
 
+def check_multi_level_resonance(symbol: str, levels: list, all_signals: dict) -> list:
+    """
+    Check for multi-level resonance confirmation
+    多级别共振确认检查
+    
+    只有当大级别 (日线) 和次级别 (30m) 同时出现同向买卖点时才确认
+    
+    Args:
+        symbol: 股票代码
+        levels: 监控级别列表 ['1d', '30m']
+        all_signals: {level: [signals]} 各级别信号
+    
+    Returns:
+        共振确认的信号列表
+    """
+    if not ENABLE_RESONANCE_FILTER:
+        # 如果未启用过滤，返回所有信号
+        result = []
+        for level, signals in all_signals.items():
+            result.extend(signals)
+        return result
+    
+    resonance_signals = []
+    
+    # 获取各级别信号
+    daily_signals = all_signals.get('1d', []) or all_signals.get('day', [])
+    thirty_min_signals = all_signals.get('30m', [])
+    
+    # 如果没有日线信号，只返回 30m 的高置信度信号
+    if not daily_signals:
+        for sig in thirty_min_signals:
+            # Convert confidence to float for comparison
+            conf = sig.get('confidence', 0)
+            if isinstance(conf, str):
+                try:
+                    conf = float(conf.replace('%', '')) / 100.0
+                except:
+                    conf = 0
+            if conf >= RESONANCE_MIN_CONFIDENCE:
+                sig['resonance'] = 'single_level_high_confidence'
+                resonance_signals.append(sig)
+        return resonance_signals
+    
+    # 检查多级别共振
+    for signal_30m in thirty_min_signals:
+        signal_type_30m = signal_30m['type'].split()[0]  # buy1, buy2, sell1, sell2
+        
+        # 查找日线同向信号
+        for signal_1d in daily_signals:
+            signal_type_1d = signal_1d['type'].split()[0]
+            
+            # 检查是否同向 (都是买点或都是卖点)
+            is_buy = signal_type_30m.startswith('buy') and signal_type_1d.startswith('buy')
+            is_sell = signal_type_30m.startswith('sell') and signal_type_1d.startswith('sell')
+            
+            if is_buy or is_sell:
+                # 共振确认！
+                signal_30m['resonance'] = 'multi_level_confirmed'
+                signal_30m['parent_signal'] = {
+                    'level': '1d',
+                    'type': signal_type_1d,
+                    'name': signal_1d['name'],
+                    'price': signal_1d['price']
+                }
+                # 提升置信度
+                signal_30m['confidence'] = max(signal_30m.get('confidence', 0.8), 0.85)
+                resonance_signals.append(signal_30m)
+                print(f"    ✅ 多级别共振确认：1d {signal_type_1d} + 30m {signal_type_30m}")
+                break
+    
+    # 如果没有共振信号，检查是否有高置信度的单级别信号
+    if not resonance_signals:
+        for sig in thirty_min_signals:
+            # Convert confidence to float for comparison
+            conf = sig.get('confidence', 0)
+            if isinstance(conf, str):
+                try:
+                    conf = float(conf.replace('%', '')) / 100.0
+                except:
+                    conf = 0
+            if conf >= RESONANCE_MIN_CONFIDENCE:
+                sig['resonance'] = 'single_level_high_confidence'
+                resonance_signals.append(sig)
+    
+    return resonance_signals
+
+
 def send_telegram_alert(symbol: str, signals: list, level: str):
     """Send Telegram alert via OpenClaw message tool with anti-spam protection"""
     if not signals:
@@ -332,19 +424,30 @@ def send_telegram_alert(symbol: str, signals: list, level: str):
             'buy1': '🟢',
             'buy2': '🟢',
             'buy3': '🟢',
-            'sell1': '🔴',
-            'sell2': '🔴',
-            'sell3': '🔴'
+            'sell1': '🟢',
+            'sell2': '🟢',
+            'sell3': '🟢'
         }.get(signal['type'].split()[0], '⚪')
         
         # Fix: Use USD prefix instead of $ to avoid shell variable expansion
         price_str = f"USD {signal['price']:.2f}"
         
-        message = f"""{emoji} {symbol} 缠论买卖点提醒
+        # Check resonance status
+        resonance_status = signal.get('resonance', 'unknown')
+        resonance_badge = ""
+        if resonance_status == 'multi_level_confirmed':
+            resonance_badge = "\n✅ **多级别共振确认**"
+            parent = signal.get('parent_signal', {})
+            if parent:
+                resonance_badge += f"\n   大级别：{parent.get('level', '1d')} {parent.get('name', '')}"
+        elif resonance_status == 'single_level_high_confidence':
+            resonance_badge = "\n🎯 高置信度单级别信号"
+        
+        message = f"""{emoji} {symbol} 缠论买卖点提醒{resonance_badge}
 
 📊 信号：{signal['name']}
 💰 价格：{price_str}
-🎯 置信度：{signal['confidence']}
+🎯 置信度：{signal['confidence']*100:.0f}%
 📝 说明：{signal['description']}
 
 ⏰ 时间：{datetime.now().strftime('%Y-%m-%d %H:%M')}
@@ -374,7 +477,7 @@ def send_telegram_alert(symbol: str, signals: list, level: str):
 
 
 def analyze_symbol(symbol_config):
-    """Analyze a single symbol across all levels"""
+    """Analyze a single symbol across all levels with multi-level resonance filter"""
     symbol = symbol_config['symbol']
     name = symbol_config['name']
     levels = symbol_config['levels']
@@ -383,7 +486,9 @@ def analyze_symbol(symbol_config):
     print(f"📊 {symbol} ({name})")
     print(f"{'='*60}")
     
-    all_signals = []
+    # Store signals by level for resonance check
+    signals_by_level = {}
+    all_signals_raw = []
     
     for level in levels:
         print(f"\n  [{level}] Analyzing...")
@@ -425,16 +530,26 @@ def analyze_symbol(symbol_config):
         print(f"    线段：{len(segments)}")
         print(f"    买卖点：{len(signals)}")
         
+        signals_by_level[level] = signals
+        all_signals_raw.extend(signals)
+        
         if signals:
             for sig in signals:
                 print(f"      🎯 {sig['type']}: {sig['name']} @ ${sig['price']:.2f}")
-            all_signals.extend(signals)
     
-    # Send alerts
-    if all_signals:
-        send_telegram_alert(symbol, all_signals, levels[0])
+    # Apply multi-level resonance filter
+    resonance_signals = check_multi_level_resonance(symbol, levels, signals_by_level)
     
-    return all_signals
+    print(f"\n    📡 原始信号：{len(all_signals_raw)} 条")
+    print(f"    ✅ 共振过滤后：{len(resonance_signals)} 条")
+    
+    # Send alerts only for resonance-confirmed signals
+    if resonance_signals:
+        send_telegram_alert(symbol, resonance_signals, levels[0])
+    else:
+        print(f"    ⏭️ 无共振确认信号，跳过警报")
+    
+    return resonance_signals
 
 
 def main():
