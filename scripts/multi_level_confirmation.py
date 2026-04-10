@@ -77,7 +77,9 @@ SYMBOLS = [
     {'symbol': 'TEL', 'name': 'TE Connectivity (美股)', 'levels': ['1d', '30m']},
     {'symbol': 'GOOG', 'name': 'Alphabet/Google (美股)', 'levels': ['1w', '1d']},
     {'symbol': 'INTC', 'name': 'Intel Corporation (美股)', 'levels': ['1d', '30m']},
+    {'symbol': 'EOSE', 'name': 'Eos Energy Enterprises (美股)', 'levels': ['1d', '30m']},
     {'symbol': 'BABA', 'name': 'Alibaba Group (美股)', 'levels': ['1d', '30m']},
+    {'symbol': 'RKLB', 'name': 'Rocket Lab USA (美股)', 'levels': ['1d', '30m']},
 ]
 
 

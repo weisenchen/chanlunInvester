@@ -7,16 +7,9 @@
       "signal_type": "sell2",
       "level": "30m"
     },
-    "CNQ.TO:buy1:30m": {
-      "price": 62.72999954223633,
-      "time": "2026-04-09T14:00:06.223630",
-      "symbol": "CNQ.TO",
-      "signal_type": "buy1",
-      "level": "30m"
-    },
     "PAAS.TO:buy2:30m": {
-      "price": 79.55999755859375,
-      "time": "2026-04-10T12:15:15.508500",
+      "price": 79.31999969482422,
+      "time": "2026-04-10T14:00:11.526269",
       "symbol": "PAAS.TO",
       "signal_type": "buy2",
       "level": "30m"
@@ -29,8 +22,8 @@
       "level": "30m"
     },
     "INTC:buy2:30m": {
-      "price": 60.869998931884766,
-      "time": "2026-04-09T15:00:11.661569",
+      "price": 62.775001525878906,
+      "time": "2026-04-10T13:45:07.291279",
       "symbol": "INTC",
       "signal_type": "buy2",
       "level": "30m"
@@ -71,8 +64,8 @@
       "level": "1d"
     },
     "PAAS.TO:sell2:30m": {
-      "price": 79.55999755859375,
-      "time": "2026-04-10T11:55:06.040256",
+      "price": 79.31999969482422,
+      "time": "2026-04-10T14:00:07.441565",
       "symbol": "PAAS.TO",
       "signal_type": "sell2",
       "level": "30m"
@@ -85,8 +78,8 @@
       "level": "30m"
     },
     "TECK:buy2:30m": {
-      "price": 56.220001220703125,
-      "time": "2026-04-10T12:15:19.897791",
+      "price": 56.04999923706055,
+      "time": "2026-04-10T13:30:07.698831",
       "symbol": "TECK",
       "signal_type": "buy2",
       "level": "30m"
