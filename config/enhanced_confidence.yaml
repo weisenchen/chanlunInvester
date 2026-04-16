@@ -1,0 +1,252 @@
+# 增强置信度系统配置文件
+
+# 股票 - 行业分类映射
+stock_sector_map:
+  # 量子计算
+  IONQ: quantum_computing
+  RGTI: quantum_computing
+  QBTS: quantum_computing
+  ARQQ: quantum_computing
+  
+  # AI/机器学习
+  NVDA: ai_ml
+  AMD: ai_ml
+  GOOG: ai_ml
+  MSFT: ai_ml
+  META: ai_ml
+  ORCL: ai_ml
+  
+  # 生物科技
+  MRNA: biotech
+  BNTX: biotech
+  CRSP: biotech
+  EDIT: biotech
+  BEAM: biotech
+  
+  # 清洁能源
+  ENPH: clean_energy
+  SEDG: clean_energy
+  FSLR: clean_energy
+  TSLA: clean_energy
+  RUN: clean_energy
+  
+  # 半导体
+  INTC: semiconductor
+  TSM: semiconductor
+  ASML: semiconductor
+  LRCX: semiconductor
+  AMAT: semiconductor
+  KLAC: semiconductor
+  
+  # 航天国防
+  RKLB: aerospace
+  BA: aerospace
+  LMT: aerospace
+  NOC: aerospace
+  RTX: aerospace
+  
+  # 传统行业 (默认)
+  DEFAULT: traditional
+
+# 行业 ETF 映射
+sector_etf_map:
+  quantum_computing: QTUM    # Defiance Quantum ETF
+  ai_ml: AIQ                  # Global X AI & Tech ETF
+  biotech: IBB                # iShares Biotechnology ETF
+  clean_energy: ICLN          # iShares Clean Energy ETF
+  semiconductor: SMH          # VanEck Semiconductor ETF
+  aerospace: ITA              # iShares U.S. Aerospace & Defense ETF
+  traditional: SPY            # S&P 500 ETF
+
+# 权重配置
+weights:
+  industry: 0.25       # 行业趋势权重
+  fundamental: 0.25    # 基本面权重
+  sentiment: 0.20      # 消息面情绪权重
+  capital_flow: 0.15   # 资金流权重
+  volatility: 0.15     # 波动率权重
+
+# 可靠性等级阈值
+reliability_thresholds:
+  very_high: 0.85      # ≥85% 非常高可靠性
+  high: 0.70           # 70%-84% 高可靠性
+  medium: 0.55         # 55%-69% 中等可靠性
+  low: 0.40            # 40%-54% 低可靠性
+  # <40% 非常低可靠性
+
+# 波动率调整配置
+volatility_config:
+  low_threshold: 0.30      # <30% 低波动
+  low_adjustment: 1.20     # 提高置信度 20%
+  
+  medium_threshold: 0.50   # 30%-50% 中波动
+  medium_adjustment: 1.00  # 不调整
+  
+  high_threshold: 0.80     # 50%-80% 高波动
+  high_adjustment: 0.80    # 降低置信度 20%
+  
+  extreme_adjustment: 0.60 # >80% 极高波动，降低 40%
+  
+  beta_high: 2.0           # Beta > 2.0 高 Beta 调整
+  beta_high_factor: 0.90   # 降低 10%
+  
+  beta_low: 0.8            # Beta < 0.8 低 Beta 调整
+  beta_low_factor: 1.10    # 提高 10%
+
+# 基本面评分配置
+fundamental_config:
+  market_cap:
+    large: 100000000000    # >1000 亿 大型
+    large_score: 0.15
+    mid: 10000000000       # >100 亿 中型
+    mid_score: 0.10
+    small: 1000000000      # >10 亿 小型
+    small_score: 0.05
+  
+  revenue_growth:
+    excellent: 0.50        # >50% 优秀
+    excellent_score: 0.25
+    good: 0.20             # >20% 良好
+    good_score: 0.15
+    positive: 0.0          # >0 正增长
+    positive_score: 0.05
+    negative: -0.20        # <-20% 负增长
+    negative_score: -0.15
+  
+  gross_margin:
+    excellent: 0.70        # >70% 优秀
+    excellent_score: 0.20
+    good: 0.50             # >50% 良好
+    good_score: 0.12
+    decent: 0.30           # >30% 一般
+    decent_score: 0.05
+    poor: 0.10             # <10% 差
+    poor_score: -0.10
+  
+  cash_ratio:
+    strong: 2.0            # >2 现金充裕
+    strong_score: 0.20
+    adequate: 1.0          # >1 足够
+    adequate_score: 0.10
+    weak: 0.5              # <0.5 现金紧张
+    weak_score: -0.10
+  
+  debt_to_equity:
+    low: 0.3               # <0.3 低负债
+    low_score: 0.20
+    moderate: 0.7          # <0.7 中等
+    moderate_score: 0.10
+    high: 2.0              # >2 高负债
+    high_score: -0.15
+
+# 情绪分析配置
+sentiment_config:
+  news_count:
+    optimal_min: 5         # 5-20 条最佳
+    optimal_max: 20
+    optimal_score: 0.15
+    excessive: 50          # >50 条可能危机
+    excessive_score: -0.10
+  
+  sentiment_keywords:
+    positive:
+      - beat
+      - upgrade
+      - growth
+      - gain
+      - surge
+      - rally
+      - bullish
+      - positive
+      - strong
+      - record
+      - breakthrough
+      - partnership
+      - deal
+      - announce
+      - launch
+      - approve
+      - success
+      - win
+    
+    negative:
+      - miss
+      - downgrade
+      - loss
+      - drop
+      - plunge
+      - crash
+      - bearish
+      - negative
+      - weak
+      - warning
+      - lawsuit
+      - investigation
+      - delay
+      - recall
+      - fail
+      - reject
+      - cut
+  
+  sentiment_weight: 0.30   # 新闻情绪权重
+
+# 资金流配置
+capital_flow_config:
+  volume_ratio:
+    optimal_min: 1.5       # 1.5-3.0 适度放量
+    optimal_max: 3.0
+    optimal_score: 0.20
+    excessive: 5.0         # >5 异常放量
+    excessive_score: -0.10
+    low: 0.5               # <0.5 缩量
+    low_score: -0.10
+  
+  institutional_ownership:
+    high: 0.70             # >70% 机构高度认可
+    high_score: 0.20
+    moderate: 0.40         # >40% 中等
+    moderate_score: 0.10
+    low: 0.10              # <10% 机构不看好
+    low_score: -0.10
+  
+  short_interest:
+    high: 0.20             # >20% 空头过高
+    high_score: -0.20
+    moderate: 0.10         # >10% 中等
+    moderate_score: -0.10
+    low: 0.03              # <3% 空头很少
+    low_score: 0.10
+
+# 警报阈值配置
+alert_config:
+  # 可靠性等级对应的警报策略
+  very_high:
+    send_alert: true
+    priority: high
+    message_prefix: "✅ 极高可靠性"
+  
+  high:
+    send_alert: true
+    priority: normal
+    message_prefix: "🟢 高可靠性"
+  
+  medium:
+    send_alert: true
+    priority: low
+    message_prefix: "⚠️ 中等可靠性"
+  
+  low:
+    send_alert: false
+    priority: none
+    message_prefix: "❌ 低可靠性"
+  
+  very_low:
+    send_alert: false
+    priority: none
+    message_prefix: "⛔ 极低可靠性"
+
+# 缓存配置
+cache_config:
+  etf_data_timeout: 30     # ETF 数据缓存 30 分钟
+  fundamental_timeout: 3600 # 基本面数据缓存 1 小时
+  sentiment_timeout: 15    # 情绪数据缓存 15 分钟

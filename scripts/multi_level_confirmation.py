@@ -80,6 +80,8 @@ SYMBOLS = [
     {'symbol': 'EOSE', 'name': 'Eos Energy Enterprises (美股)', 'levels': ['1d', '30m']},
     {'symbol': 'BABA', 'name': 'Alibaba Group (美股)', 'levels': ['1d', '30m']},
     {'symbol': 'RKLB', 'name': 'Rocket Lab USA (美股)', 'levels': ['1d', '30m']},
+    {'symbol': 'SMR', 'name': 'NuScale Power Corporation (美股)', 'levels': ['1d', '30m']},
+    {'symbol': 'IONQ', 'name': 'IonQ Inc (美股/量子计算)', 'levels': ['1d', '30m']},
 ]
 
 

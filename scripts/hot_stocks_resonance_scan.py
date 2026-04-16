@@ -28,6 +28,7 @@ from trading_system.fractal import FractalDetector
 from trading_system.pen import PenCalculator, PenConfig
 from trading_system.segment import SegmentCalculator
 from trading_system.indicators import MACDIndicator
+from trading_system.center import CenterDetector
 
 # ==================== 配置 ====================
 
@@ -171,11 +172,88 @@ class HotStocksResonanceScanner:
             print(f"❌ {symbol} {timeframe}: {e}")
             return None
     
+    def buy1_confirmed(self, fractals, macd_data) -> bool:
+        """
+        检查第一类买点 (buy1) 是否已经发生
+        这是第二类买点的前置条件！
+        """
+        bottom_fractals = [f for f in fractals if not f.is_top]
+        
+        if len(bottom_fractals) < 2 or not macd_data:
+            return False
+        
+        last_low = bottom_fractals[-1]
+        prev_low = bottom_fractals[-2]
+        
+        # 条件 1: 价格新低
+        if last_low.price >= prev_low.price:
+            return False
+        
+        # 条件 2: MACD 背驰
+        last_idx = last_low.kline_index
+        prev_idx = prev_low.kline_index
+        
+        if last_idx >= len(macd_data) or prev_idx >= len(macd_data):
+            return False
+        
+        last_macd = macd_data[last_idx].histogram
+        prev_macd = macd_data[prev_idx].histogram
+        
+        # 价格新低但 MACD 不新低 = 背驰
+        if last_macd <= prev_macd:
+            return False
+        
+        return True
+    
+    def sell1_confirmed(self, fractals, macd_data) -> bool:
+        """
+        检查第一类卖点 (sell1) 是否已经发生
+        这是第二类卖点的前置条件！
+        """
+        top_fractals = [f for f in fractals if f.is_top]
+        
+        if len(top_fractals) < 2 or not macd_data:
+            return False
+        
+        last_high = top_fractals[-1]
+        prev_high = top_fractals[-2]
+        
+        # 条件 1: 价格新高
+        if last_high.price <= prev_high.price:
+            return False
+        
+        # 条件 2: MACD 背驰
+        last_idx = last_high.kline_index
+        prev_idx = prev_high.kline_index
+        
+        if last_idx >= len(macd_data) or prev_idx >= len(macd_data):
+            return False
+        
+        last_macd = macd_data[last_idx].histogram
+        prev_macd = macd_data[prev_idx].histogram
+        
+        # 价格新高但 MACD 不新高 = 背驰
+        if last_macd >= prev_macd:
+            return False
+        
+        return True
+    
     def detect_signals(self, series: KlineSeries, level: str) -> List[dict]:
-        """检测买卖点"""
+        """
+        检测买卖点
+        
+        修复：
+        1. 第二类买卖点必须检查第一类买卖点已确认（缠论定义）
+        2. 买卖点必须结合中枢判断（缠论核心）
+        """
         fractals = self.fractal_detector.detect_all(series)
         pens = self.pen_calculator.identify_pens(series)
         segments = self.segment_calculator.detect_segments(pens)
+        
+        # 检测中枢
+        center_det = CenterDetector(min_segments=3)
+        centers = center_det.detect_centers(segments)
+        last_center = centers[-1] if centers else None
         
         prices = [k.close for k in series.klines]
         macd_data = self.macd.calculate(prices)
@@ -200,37 +278,67 @@ class HotStocksResonanceScanner:
         }
         thresh = thresholds.get(level, thresholds['30m'])
         
-        # 第二类买点
+        # ========== 第二类买点 ==========
+        # 缠论定义：buy1 确认 + 上涨趋势 + 回调回到中枢 + 不破前低
         if len(bottom_fractals) >= 2 and current_trend == 'up':
             last_low = bottom_fractals[-1]
             prev_low = bottom_fractals[-2]
             
-            # Fractal uses kline_index, not index
-            if last_low.kline_index > prev_low.kline_index and last_low.price > prev_low.price * (1 - thresh['bsp2']):
-                confidence = min(0.9, 0.7 + (last_low.price - prev_low.price) / prev_low.price * 10)
-                signals.append({
-                    'type': 'buy2',
-                    'name': f'{level}级别第二类买点',
-                    'price': current_price,
-                    'confidence': confidence,
-                    'description': f'{level}级别回调确认，上涨趋势延续'
-                })
+            # 条件 1: 不破前低
+            if last_low.price > prev_low.price * (1 - thresh['bsp2']):
+                # 条件 2: buy1 已确认
+                if self.buy1_confirmed(fractals, macd_data):
+                    # 条件 3: 回测中枢
+                    center_pullback = False
+                    if last_center:
+                        if last_center.contains(current_price) or \
+                           abs(current_price - last_center.zd) / last_center.zd < 0.01:
+                            center_pullback = True
+                    else:
+                        center_pullback = True  # 无中枢时也允许
+                    
+                    if center_pullback:
+                        confidence = min(0.9, 0.7 + (last_low.price - prev_low.price) / prev_low.price * 10)
+                        signals.append({
+                            'type': 'buy2',
+                            'name': f'{level}级别第二类买点',
+                            'price': current_price,
+                            'confidence': confidence,
+                            'buy1_confirmed': True,
+                            'center_pullback': center_pullback,
+                            'description': f'{level}级别回调确认，buy1 已确认，回测中枢'
+                        })
         
-        # 第二类卖点
+        # ========== 第二类卖点 ==========
+        # 缠论定义：sell1 确认 + 下跌趋势 + 反弹回到中枢 + 不过前高
         if len(top_fractals) >= 2 and current_trend == 'down':
             last_high = top_fractals[-1]
             prev_high = top_fractals[-2]
             
-            # Fractal uses kline_index, not index
-            if last_high.kline_index > prev_high.kline_index and last_high.price < prev_high.price * (1 + thresh['bsp2']):
-                confidence = min(0.9, 0.7 + (prev_high.price - last_high.price) / prev_high.price * 10)
-                signals.append({
-                    'type': 'sell2',
-                    'name': f'{level}级别第二类卖点',
-                    'price': current_price,
-                    'confidence': confidence,
-                    'description': f'{level}级别反弹确认，下跌趋势延续'
-                })
+            # 条件 1: 不过前高
+            if last_high.price < prev_high.price * (1 + thresh['bsp2']):
+                # 条件 2: sell1 已确认
+                if self.sell1_confirmed(fractals, macd_data):
+                    # 条件 3: 回测中枢
+                    center_pullback = False
+                    if last_center:
+                        if last_center.contains(current_price) or \
+                           abs(current_price - last_center.zg) / last_center.zg < 0.01:
+                            center_pullback = True
+                    else:
+                        center_pullback = True  # 无中枢时也允许
+                    
+                    if center_pullback:
+                        confidence = min(0.9, 0.7 + (prev_high.price - last_high.price) / prev_high.price * 10)
+                        signals.append({
+                            'type': 'sell2',
+                            'name': f'{level}级别第二类卖点',
+                            'price': current_price,
+                            'confidence': confidence,
+                            'sell1_confirmed': True,
+                            'center_pullback': center_pullback,
+                            'description': f'{level}级别反弹确认，sell1 已确认，回测中枢'
+                        })
         
         return signals
     
@@ -433,6 +541,13 @@ def is_trading_time():
 def main():
     """主程序"""
     import subprocess
+    import argparse
+    
+    # 解析命令行参数
+    parser = argparse.ArgumentParser(description='热门股票 + ETF 共振扫描')
+    parser.add_argument('--premarket', action='store_true', help='强制生成盘前报告')
+    parser.add_argument('--close', action='store_true', help='强制生成收盘前报告')
+    args = parser.parse_args()
     
     if not is_trading_time():
         print(f"⚪ {datetime.now().strftime('%Y-%m-%d')} 不是交易日，跳过")
@@ -442,8 +557,12 @@ def main():
     market_open = now.replace(hour=9, minute=30, second=0, microsecond=0)
     market_close = now.replace(hour=16, minute=0, second=0, microsecond=0)
     
-    # 确定报告类型
-    if now < market_open + timedelta(hours=1):
+    # 确定报告类型 (支持命令行参数覆盖)
+    if args.premarket:
+        report_type = "盘前报告 (09:00 EDT)"
+    elif args.close:
+        report_type = "收盘前报告 (15:00 EDT)"
+    elif now < market_open + timedelta(hours=1):
         report_type = "盘前报告 (09:00 EDT)"
     elif now > market_close - timedelta(hours=1):
         report_type = "收盘前报告 (15:00 EDT)"

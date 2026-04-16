@@ -1,95 +1,11 @@
 {
   "alerts": {
-    "TECK:sell2:30m": {
-      "price": 56.11000061035156,
-      "time": "2026-04-10T13:15:07.363018",
-      "symbol": "TECK",
-      "signal_type": "sell2",
-      "level": "30m"
-    },
-    "PAAS.TO:buy2:30m": {
-      "price": 79.31999969482422,
-      "time": "2026-04-10T14:00:11.526269",
-      "symbol": "PAAS.TO",
-      "signal_type": "buy2",
-      "level": "30m"
-    },
-    "TEL:buy2:30m": {
-      "price": 230.6999969482422,
-      "time": "2026-04-10T09:55:07.032355",
-      "symbol": "TEL",
-      "signal_type": "buy2",
-      "level": "30m"
-    },
-    "INTC:buy2:30m": {
-      "price": 62.775001525878906,
-      "time": "2026-04-10T13:45:07.291279",
-      "symbol": "INTC",
-      "signal_type": "buy2",
-      "level": "30m"
-    },
-    "CNQ.TO:sell2:30m": {
-      "price": 64.18000030517578,
-      "time": "2026-04-10T12:15:11.219787",
-      "symbol": "CNQ.TO",
-      "signal_type": "sell2",
-      "level": "30m"
-    },
-    "PAAS.TO:buy1:30m": {
-      "price": 79.29000091552734,
-      "time": "2026-04-10T11:00:06.230873",
-      "symbol": "PAAS.TO",
-      "signal_type": "buy1",
-      "level": "30m"
-    },
-    "GOOG:buy2:1w": {
-      "price": 315.17999267578125,
-      "time": "2026-04-10T12:45:07.244660",
-      "symbol": "GOOG",
-      "signal_type": "buy2",
-      "level": "1w"
-    },
-    "CNQ.TO:buy2:30m": {
-      "price": 64.18000030517578,
-      "time": "2026-04-10T12:15:06.914159",
-      "symbol": "CNQ.TO",
-      "signal_type": "buy2",
-      "level": "30m"
-    },
-    "BABA:buy2:1d": {
-      "price": 128.49000549316406,
-      "time": "2026-04-10T10:45:11.937287",
-      "symbol": "BABA",
+    "SMR:buy2:1d": {
+      "price": 11.510000228881836,
+      "time": "2026-04-16T13:00:08.953445",
+      "symbol": "SMR",
       "signal_type": "buy2",
       "level": "1d"
-    },
-    "PAAS.TO:sell2:30m": {
-      "price": 79.31999969482422,
-      "time": "2026-04-10T14:00:07.441565",
-      "symbol": "PAAS.TO",
-      "signal_type": "sell2",
-      "level": "30m"
-    },
-    "INTC:sell2:30m": {
-      "price": 62.400001525878906,
-      "time": "2026-04-10T13:00:08.082781",
-      "symbol": "INTC",
-      "signal_type": "sell2",
-      "level": "30m"
-    },
-    "TECK:buy2:30m": {
-      "price": 56.04999923706055,
-      "time": "2026-04-10T13:30:07.698831",
-      "symbol": "TECK",
-      "signal_type": "buy2",
-      "level": "30m"
-    },
-    "EOSE:sell2:30m": {
-      "price": 5.849999904632568,
-      "time": "2026-04-10T12:30:07.849566",
-      "symbol": "EOSE",
-      "signal_type": "sell2",
-      "level": "30m"
     }
   }
 }

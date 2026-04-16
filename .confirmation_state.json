@@ -42,7 +42,7 @@
     "symbol": "CVE.TO",
     "parent_level": "1d",
     "child_level": "30m",
-    "stage": "parent_divergence",
+    "stage": "failed",
     "parent_divergence": {
       "symbol": "CVE.TO",
       "level": "1d",
@@ -54,7 +54,47 @@
     "child_bsp1": null,
     "child_bsp2": null,
     "created_at": "2026-04-06 23:10:34.378847",
-    "updated_at": "2026-04-06 23:10:34.378850",
+    "updated_at": "2026-04-13 11:55:02.898211",
+    "confirmed_price": null,
+    "notes": "\u8d85\u65f6\uff1a48\u5c0f\u65f6\u5185\u672a\u6536\u5230\u6b21\u7ea7\u522b\u786e\u8ba4"
+  },
+  "SMR:1d": {
+    "symbol": "SMR",
+    "parent_level": "1d",
+    "child_level": "30m",
+    "stage": "parent_divergence",
+    "parent_divergence": {
+      "symbol": "SMR",
+      "level": "1d",
+      "signal_type": "buy",
+      "strength": 431.0679567251023,
+      "price": 11.180000305175781,
+      "timestamp": "2026-04-13 11:21:58.613939"
+    },
+    "child_bsp1": null,
+    "child_bsp2": null,
+    "created_at": "2026-04-13 11:21:58.756830",
+    "updated_at": "2026-04-13 11:21:58.756833",
+    "confirmed_price": null,
+    "notes": ""
+  },
+  "EOSE:1d": {
+    "symbol": "EOSE",
+    "parent_level": "1d",
+    "child_level": "30m",
+    "stage": "parent_divergence",
+    "parent_divergence": {
+      "symbol": "EOSE",
+      "level": "1d",
+      "signal_type": "buy",
+      "strength": 151.09089055202494,
+      "price": 6.369999885559082,
+      "timestamp": "2026-04-16 11:16:45.044561"
+    },
+    "child_bsp1": null,
+    "child_bsp2": null,
+    "created_at": "2026-04-16 11:16:45.133447",
+    "updated_at": "2026-04-16 11:16:45.133450",
     "confirmed_price": null,
     "notes": ""
   }
