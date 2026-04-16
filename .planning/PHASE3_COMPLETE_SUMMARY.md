@@ -19,7 +19,7 @@
 | **文档** | 0 | 2 | 0% | ❌ |
 | **验收标准** | 2 | 3 | 67% | ✅ |
 
-**总体完成度**: 90% (18/20)
+**总体完成度**: 95% (19/20)
 
 ---
 
@@ -58,10 +58,10 @@
 
 ## 🟡 待完成
 
-### 1. 文档 (0%)
+### 1. 文档 (100%) ✅
 
-- [ ] 用户手册 (`TREND_REVERSAL_USER_MANUAL.md`)
-- [ ] API 文档 (`TREND_REVERSAL_API.md`)
+- [x] 用户手册 (`TREND_REVERSAL_USER_MANUAL.md`)
+- [x] API 文档 (`TREND_REVERSAL_API.md`)
 
 ### 2. 利润保住率优化
 
