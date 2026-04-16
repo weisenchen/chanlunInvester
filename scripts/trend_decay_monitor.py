@@ -77,23 +77,23 @@ class TrendDecayMonitor:
             'multi_level_divergence': 0.15,
         }
         
-        # 阈值配置
+        # 阈值配置 (优化版 - 降低门槛以产生更多信号)
         self.thresholds = {
-            'strength_decline_rate': -0.3,  # 力度下降 30%
-            'center_expansion_rate': 0.5,    # 中枢扩大 50%
-            'time_extension_rate': 0.5,      # 时间延长 50%
-            'volume_decline_rate': -0.3,     # 成交量萎缩 30%
+            'strength_decline_rate': -0.2,  # 力度下降 20% (原 30%)
+            'center_expansion_rate': 0.3,    # 中枢扩大 30% (原 50%)
+            'time_extension_rate': 0.3,      # 时间延长 30% (原 50%)
+            'volume_decline_rate': -0.2,     # 成交量萎缩 20% (原 30%)
         }
         
-        # 检测器
+        # 检测器 (降低中枢检测门槛)
         self.fractal_detector = FractalDetector()
         self.pen_calculator = PenCalculator(PenConfig(
             use_new_definition=True,
-            strict_validation=True,
-            min_klines_between_turns=3
+            strict_validation=False,  # 降低严格度
+            min_klines_between_turns=2  # 从 3 降到 2
         ))
-        self.segment_calculator = SegmentCalculator(min_pens=3)
-        self.center_detector = CenterDetector(min_segments=3)
+        self.segment_calculator = SegmentCalculator(min_pens=2)  # 从 3 降到 2
+        self.center_detector = CenterDetector(min_segments=2)  # 从 3 降到 2
         self.macd = MACDIndicator(fast=12, slow=26, signal=9)
     
     def monitor(self, series: KlineSeries, symbol: str, level: str,
@@ -202,8 +202,8 @@ class TrendDecayMonitor:
             # 离开中枢的线段
             if center.end_idx + 1 < len(segments):
                 exit_segment = segments[center.end_idx + 1]
-                # 力度 = 斜率 × 长度
-                strength = abs(exit_segment.slope) * exit_segment.length
+                # 力度 = 幅度 × 笔数 (使用 Segment 的 magnitude 和 pen_count)
+                strength = abs(exit_segment.magnitude) * exit_segment.pen_count
                 strengths.append(strength)
         
         # 判断是否递减
