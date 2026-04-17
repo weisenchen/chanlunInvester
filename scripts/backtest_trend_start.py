@@ -233,15 +233,21 @@ class TrendStartBacktester:
 
 def main():
     """主函数"""
-    # 回测配置 (2 年历史数据以形成足够中枢)
-    SYMBOL_LIST = ['AAPL', 'TSLA', 'NVDA', 'AMD', 'GOOG', 
-                   'MSFT', 'META', 'NFLX', 'COIN', 'PLTR']
+    # 回测配置 - Phase 5 优化版 (增加高波动股票)
+    SYMBOL_LIST = [
+        # 原有高波动股票
+        'TSLA', 'NVDA', 'AMD', 'COIN', 'PLTR', 'SMR', 'IONQ', 'RKLB',
+        # 新增高波动股票 (加密货币相关)
+        'MARA', 'RIOT', 'HOOD', 'SOFI', 'LCID', 'RIVN', 'NIO', 'XPEV',
+        # 新增高波动股票 (生物科技)
+        'MRNA', 'BNTX', 'NVAX',
+    ]
     START_DATE = '2024-01-01'  # 2 年历史
     END_DATE = '2026-04-16'
     HOLD_DAYS = 20
     
     print(f"回测配置:")
-    print(f"  标的：{len(SYMBOL_LIST)} 只股票")
+    print(f"  标的：{len(SYMBOL_LIST)} 只股票 (Phase 5 优化版)")
     print(f"  时间：{START_DATE} 至 {END_DATE} ({(datetime.strptime(END_DATE, '%Y-%m-%d') - datetime.strptime(START_DATE, '%Y-%m-%d')).days} 天)")
     print(f"  持有期：{HOLD_DAYS} 天")
     print()

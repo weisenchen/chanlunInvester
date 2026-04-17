@@ -77,23 +77,23 @@ class TrendDecayMonitor:
             'multi_level_divergence': 0.15,
         }
         
-        # 阈值配置 (优化版 - 降低门槛以产生更多信号)
+        # 阈值配置 (Phase 5 优化版 - 进一步降低门槛)
         self.thresholds = {
-            'strength_decline_rate': -0.2,  # 力度下降 20% (原 30%)
-            'center_expansion_rate': 0.3,    # 中枢扩大 30% (原 50%)
-            'time_extension_rate': 0.3,      # 时间延长 30% (原 50%)
-            'volume_decline_rate': -0.2,     # 成交量萎缩 20% (原 30%)
+            'strength_decline_rate': -0.15,  # 力度下降 15% (原 20%)
+            'center_expansion_rate': 0.2,    # 中枢扩大 20% (原 30%)
+            'time_extension_rate': 0.2,      # 时间延长 20% (原 30%)
+            'volume_decline_rate': -0.15,    # 成交量萎缩 15% (原 20%)
         }
         
-        # 检测器 (降低中枢检测门槛)
+        # 检测器 (Phase 5 优化版 - 进一步降低中枢检测门槛)
         self.fractal_detector = FractalDetector()
         self.pen_calculator = PenCalculator(PenConfig(
             use_new_definition=True,
-            strict_validation=False,  # 降低严格度
-            min_klines_between_turns=2  # 从 3 降到 2
+            strict_validation=False,
+            min_klines_between_turns=1  # 从 2 降到 1
         ))
-        self.segment_calculator = SegmentCalculator(min_pens=2)  # 从 3 降到 2
-        self.center_detector = CenterDetector(min_segments=2)  # 从 3 降到 2
+        self.segment_calculator = SegmentCalculator(min_pens=1)  # 从 2 降到 1
+        self.center_detector = CenterDetector(min_segments=1)  # 从 2 降到 1
         self.macd = MACDIndicator(fast=12, slow=26, signal=9)
     
     def monitor(self, series: KlineSeries, symbol: str, level: str,
@@ -254,7 +254,7 @@ class TrendDecayMonitor:
         duration_last = centers[-1].end_idx - centers[-1].start_idx
         duration_prev = centers[-2].end_idx - centers[-2].start_idx
         
-        if duration_last > duration_prev * (1 + self.thresholds['time_extension_rate']):
+        if duration_prev > 0 and duration_last > duration_prev * (1 + self.thresholds['time_extension_rate']):
             extension_rate = (duration_last - duration_prev) / duration_prev
             return {
                 'extending': True,
