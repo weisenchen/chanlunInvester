@@ -1,7 +1,7 @@
-# 缠论 v2.0 开发与部署指南
+# 缠论 v6.0 开发与部署指南
 
 **更新日期**: 2026-04-16 23:15 EDT  
-**版本**: v2.0-beta  
+**版本**: v6.0-beta  
 **状态**: 🟢 准备发布
 
 ---
@@ -66,7 +66,7 @@ pandas>=1.3.0
 **当前状态**: 代码已在 `chanlun-v2` 分支
 
 ```bash
-# 切换到 v2.0 分支
+# 切换到 v6.0 分支
 git checkout chanlun-v2
 
 # 查看当前状态
@@ -80,7 +80,7 @@ git log --oneline -10
 ```
 chanlunInvester/
 ├── scripts/                      # 核心脚本
-│   ├── comprehensive_confidence_engine.py  # v2.0 统一引擎
+│   ├── comprehensive_confidence_engine.py  # v6.0 统一引擎
 │   ├── trend_start_detector.py             # Phase 1 起势检测
 │   ├── trend_decay_monitor.py              # Phase 2 衰减监测
 │   ├── trend_reversal_warning.py           # Phase 3 反转预警
@@ -92,7 +92,7 @@ chanlunInvester/
 │   ├── test_trend_reversal_warning.py
 │   └── test_comprehensive_confidence.py
 ├── docs/                         # 文档
-│   ├── V2_*.md                   # v2.0 文档
+│   ├── V2_*.md                   # v6.0 文档
 │   └── PHASE*_ACCEPTANCE_REPORT.md
 └── python-layer/                 # Python 核心层
     └── trading_system/           # 交易系统
@@ -104,7 +104,7 @@ chanlunInvester/
 
 ### 1. 快速测试
 
-**测试 v2.0 引擎**:
+**测试 v6.0 引擎**:
 ```bash
 cd /home/wei/.openclaw/workspace/chanlunInvester
 source venv/bin/activate
@@ -140,7 +140,7 @@ python scripts/comprehensive_confidence_engine.py
 
 ### 2. 对比测试
 
-**v2.0 vs v5.3 对比**:
+**v6.0 vs v5.3 对比**:
 ```bash
 # 运行对比分析
 python scripts/compare_v2_v5_monitor.py
@@ -149,12 +149,12 @@ python scripts/compare_v2_v5_monitor.py
 **预期输出**:
 ```
 ======================================================================
-缠论 v2.0 vs v5.3 监控股票对比分析
+缠论 v6.0 vs v5.3 监控股票对比分析
 ======================================================================
-  SMR: v2.0 🚀 STRONG_BUY (92%), v5.3 buy1
-  其他：v2.0 🟢 BUY (67%), v5.3 ❌ 无
+  SMR: v6.0 🚀 STRONG_BUY (92%), v5.3 buy1
+  其他：v6.0 🟢 BUY (67%), v5.3 ❌ 无
 
-v2.0: 买入 12/12 (100.0%), 平均置信度 68.8%
+v6.0: 买入 12/12 (100.0%), 平均置信度 68.8%
 v5.3: 信号 1/12 (8.3%)
 ```
 
@@ -227,7 +227,7 @@ Phase 4: 误差<18%
 - [ ] v5.3 确认奖励正确 (+25%)
 
 **对比测试**:
-- [ ] v2.0 vs v5.3 对比正确
+- [ ] v6.0 vs v5.3 对比正确
 - [ ] 双系统确认股票置信度提升
 - [ ] 区分度明显 (92% vs 67%)
 
@@ -283,7 +283,7 @@ time python scripts/compare_v2_v5_monitor.py
 - [ ] 回测结果达标
 - [ ] 文档完整
 - [ ] 代码审查完成
-- [ ] 版本号确认 (v2.0-beta)
+- [ ] 版本号确认 (v6.0-beta)
 
 **打包**:
 ```bash
@@ -341,7 +341,7 @@ python scripts/compare_v2_v5_monitor.py
 **步骤 5: 切换流量**:
 ```bash
 # 如果是蓝绿部署
-# 1. 启动 v2.0 实例
+# 1. 启动 v6.0 实例
 # 2. 验证健康检查
 # 3. 切换负载均衡
 # 4. 监控错误率
@@ -378,7 +378,7 @@ tail -f logs/*.log
 
 ## 📅 发布计划
 
-### v2.0-beta (2026-04-18)
+### v6.0-beta (2026-04-18)
 
 **发布内容**:
 - ✅ 核心功能完整
@@ -392,14 +392,14 @@ tail -f logs/*.log
 - 收集反馈
 
 **发布步骤**:
-1. 创建 GitHub Release (v2.0-beta)
+1. 创建 GitHub Release (v6.0-beta)
 2. 发布到 chanlun-v2 分支
 3. 通知测试用户
 4. 收集反馈 (≥5 条)
 
 ---
 
-### v2.0 正式版 (2026-04-20)
+### v6.0 正式版 (2026-04-20)
 
 **发布条件**:
 - [ ] 收集≥5 条 beta 反馈
@@ -413,7 +413,7 @@ tail -f logs/*.log
 
 **发布步骤**:
 1. 合并 chanlun-v2 到 main 分支
-2. 创建 GitHub Release (v2.0)
+2. 创建 GitHub Release (v6.0)
 3. 更新生产环境
 4. 发布公告
 
@@ -519,5 +519,5 @@ ssh user@production 'cd /path/to/production && tar -xzf /tmp/chanlun_v2_beta.tar
 
 **文档生成**: 2026-04-16 23:15 EDT  
 **生成者**: ChanLun AI Agent  
-**版本**: v2.0-beta  
+**版本**: v6.0-beta  
 **状态**: 🟢 准备发布

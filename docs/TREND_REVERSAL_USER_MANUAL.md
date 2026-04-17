@@ -279,7 +279,7 @@ python scripts/backtest_trend_reversal.py
 
 ## 📚 相关文档
 
-- `CHANLUN_V2_DETAILED_PLAN.md` - v2.0 开发计划
+- `CHANLUN_V2_DETAILED_PLAN.md` - v6.0 开发计划
 - `PHASE3_PLAN.md` - Phase 3 开发计划
 - `PHASE3_ACCEPTANCE_REPORT.md` - Phase 3 验收报告
 

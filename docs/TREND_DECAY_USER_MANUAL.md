@@ -285,7 +285,7 @@ python scripts/backtest_trend_decay.py
 
 ## 📚 相关文档
 
-- `CHANLUN_V2_DETAILED_PLAN.md` - v2.0 开发计划
+- `CHANLUN_V2_DETAILED_PLAN.md` - v6.0 开发计划
 - `PHASE2_PLAN.md` - Phase 2 开发计划
 - `BACKTEST_RESULTS_PHASE2.md` - 回测结果报告 (待生成)
 

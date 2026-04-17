@@ -1,17 +1,17 @@
-# 缠论 v2.0 继承与新增功能说明
+# 缠论 v6.0 继承与新增功能说明
 
 **更新日期**: 2026-04-16 23:05 EDT  
-**版本**: v2.0-beta  
+**版本**: v6.0-beta  
 **定位**: 继承 v5.3 + 新增提前预警
 
 ---
 
-## 🎯 v2.0 设计原则
+## 🎯 v6.0 设计原则
 
 **"完全继承 + 新增功能"**
 
 ```
-v2.0 = v5.3 全部功能 (100% 继承)
+v6.0 = v5.3 全部功能 (100% 继承)
      + 提前预警功能 (新增)
      + 统一评估系统 (新增)
 ```
@@ -27,7 +27,7 @@ v2.0 = v5.3 全部功能 (100% 继承)
 
 ### v5.3 功能 (100% 继承)
 
-| 功能 | v5.3 | v2.0 | 状态 |
+| 功能 | v5.3 | v6.0 | 状态 |
 |------|------|------|------|
 | **买卖点检测** | ✅ | ✅ | 完全继承 |
 | buy1 (背驰) | ✅ | ✅ | 完全继承 |
@@ -44,13 +44,13 @@ v2.0 = v5.3 全部功能 (100% 继承)
 | Telegram 推送 | ✅ | ✅ | 完全继承 |
 | 防重复警报 | ✅ | ✅ | 完全继承 |
 
-**结论**: v5.3 所有功能，v2.0 100% 继承
+**结论**: v5.3 所有功能，v6.0 100% 继承
 
 ---
 
-### v2.0 新增功能
+### v6.0 新增功能
 
-| 功能 | v5.3 | v2.0 | 说明 |
+| 功能 | v5.3 | v6.0 | 说明 |
 |------|------|------|------|
 | **提前预警** | ❌ | ✅ | 新增 Phase 1-3 |
 | Phase 1: 起势检测 | ❌ | ✅ | 提前 3-5 天抄底 |
@@ -64,7 +64,7 @@ v2.0 = v5.3 全部功能 (100% 继承)
 | 统一建议 | ❌ | ✅ | BUY/HOLD/SELL |
 | 统一仓位 | ❌ | ✅ | 0-100% |
 
-**结论**: v2.0 在 v5.3 基础上新增三大功能
+**结论**: v6.0 在 v5.3 基础上新增三大功能
 
 ---
 
@@ -75,7 +75,7 @@ v2.0 = v5.3 全部功能 (100% 继承)
 **v5.3 买卖点检测代码完整保留**:
 
 ```python
-# v2.0 完整保留 v5.3 检测逻辑
+# v6.0 完整保留 v5.3 检测逻辑
 def _detect_v5_buy_sell_points(self, series, level):
     """
     v5.3 买卖点检测 (完全继承)
@@ -106,7 +106,7 @@ def _detect_v5_buy_sell_points(self, series, level):
 **v5.3 配置完全保留**:
 
 ```python
-# v5.3 配置 (v2.0 完全继承)
+# v5.3 配置 (v6.0 完全继承)
 MONITOR_STOCKS = [
     'CNQ.TO', 'PAAS.TO', 'TECK',
     'TEL', 'GOOG', 'INTC', 'EOSE', 'BABA', 'RKLB', 'SMR', 'IONQ', 'TSLA',
@@ -137,13 +137,13 @@ CENTER_CONFIG = CenterDetector(min_segments=3)  # 3 个线段 (v5.3 标准)
 v5.3 输出:
   🟢 SMR 1d 级别第一类买点 (背驰) @ $11.72
 
-v2.0 输出 (包含 v5.3 信息):
+v6.0 输出 (包含 v5.3 信息):
   📊 综合置信度评估 - SMR (1d)
   ======================================================================
   综合置信度：92%
   
   买卖点检测：✅ buy1 (保留 v5.3 精华)  ← 完整继承
-  提前预警：  ✅ 已提前 2 天预警 (v2.0 新增)
+  提前预警：  ✅ 已提前 2 天预警 (v6.0 新增)
   
   操作建议：🚀 STRONG_BUY
   建议仓位：80%
@@ -163,7 +163,7 @@ v2.0 输出 (包含 v5.3 信息):
 **Phase 1: 趋势起势检测**
 
 ```python
-# v2.0 新增
+# v6.0 新增
 def detect_start_signal(self, series, symbol, level):
     """
     提前 3-5 天捕捉趋势起势 (新增功能)
@@ -180,7 +180,7 @@ def detect_start_signal(self, series, symbol, level):
 **Phase 2: 趋势衰减监测**
 
 ```python
-# v2.0 新增
+# v6.0 新增
 def detect_decay_signal(self, series, symbol, level):
     """
     实时监测趋势衰减 (新增功能)
@@ -197,7 +197,7 @@ def detect_decay_signal(self, series, symbol, level):
 **Phase 3: 趋势反转预警**
 
 ```python
-# v2.0 新增
+# v6.0 新增
 def detect_reversal_signal(self, series, symbol, level):
     """
     提前 3-5 天预警趋势反转 (新增功能)
@@ -217,7 +217,7 @@ def detect_reversal_signal(self, series, symbol, level):
 **统一评估**:
 
 ```python
-# v2.0 新增
+# v6.0 新增
 def calculate_comprehensive_confidence(self, v5_signal, start_signal, decay_signal, reversal_signal):
     """
     综合置信度计算 (新增功能)
@@ -241,7 +241,7 @@ def calculate_comprehensive_confidence(self, v5_signal, start_signal, decay_sign
 ```python
 @dataclass
 class ComprehensiveSignal:
-    """v2.0 统一信号 (新增)"""
+    """v6.0 统一信号 (新增)"""
     # 统一置信度
     comprehensive_confidence: float  # 0-100%
     
@@ -270,7 +270,7 @@ class ComprehensiveSignal:
 Day 3: buy1 背驰形成 → 🟢 buy1 @ $11.72
 ```
 
-**v2.0 (继承 + 新增)**:
+**v6.0 (继承 + 新增)**:
 ```
 Day 1: 
   买卖点检测：❌ 无 (继承 v5.3)
@@ -308,7 +308,7 @@ Day 3:
 Day 3: sell1 背驰形成 → 🔴 sell1 @ $100
 ```
 
-**v2.0 (继承 + 新增)**:
+**v6.0 (继承 + 新增)**:
 ```
 Day 1:
   买卖点检测：❌ 无 (继承 v5.3)
@@ -341,7 +341,7 @@ Day 3:
 
 ## 💡 使用说明
 
-### 使用 v2.0 (继承 + 新增)
+### 使用 v6.0 (继承 + 新增)
 
 ```python
 from scripts.comprehensive_confidence_engine import ComprehensiveConfidenceEngine
@@ -405,7 +405,7 @@ elif signal.comprehensive_confidence >= 0.6:
 
 ## 📋 总结
 
-### v2.0 继承关系
+### v6.0 继承关系
 
 **v5.3 功能 (100% 继承)**:
 - ✅ 买卖点检测 (buy1/buy2/sell1/sell2)
@@ -413,7 +413,7 @@ elif signal.comprehensive_confidence >= 0.6:
 - ✅ 多级别监控 (日线 +30m+5m)
 - ✅ 警报推送 (Telegram)
 
-**v2.0 新增功能**:
+**v6.0 新增功能**:
 - ➕ 提前预警 (Phase 1-3)
 - ➕ 综合置信度 (量化评估)
 - ➕ 统一输出 (一个信号)
@@ -451,7 +451,7 @@ elif signal.comprehensive_confidence >= 0.6:
 cat docs/V2_INHERITANCE_AND_NEW_FEATURES.md
 ```
 
-### 使用 v2.0 (继承 + 新增)
+### 使用 v6.0 (继承 + 新增)
 ```python
 from scripts.comprehensive_confidence_engine import ComprehensiveConfidenceEngine
 
@@ -465,5 +465,5 @@ print(engine.format_signal(signal))
 
 **文档生成**: 2026-04-16 23:05 EDT  
 **生成者**: ChanLun AI Agent  
-**版本**: v2.0-beta  
+**版本**: v6.0-beta  
 **定位**: v5.3 100% 继承 + 新增提前预警

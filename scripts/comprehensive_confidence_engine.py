@@ -98,7 +98,7 @@ class ComprehensiveConfidenceEngine:
         # 是否使用 v5.3 过滤
         self.use_v5_filter = use_v5_filter
         
-        # 权重配置 (v2.0 优化版 - 基于 v5.3 过滤)
+        # 权重配置 (v6.0 优化版 - 基于 v5.3 过滤)
         # v5.3 过滤后，Phase 1-3 权重调整
         self.weights = {
             'start': 0.30,      # 30% (起势)
@@ -110,7 +110,7 @@ class ComprehensiveConfidenceEngine:
                  small_level_series: Optional[KlineSeries] = None,
                  large_level_series: Optional[KlineSeries] = None) -> ComprehensiveSignal:
         """
-        综合评估 (v2.0 改进版 - 保留 v5.3 核心功能)
+        综合评估 (v6.0 改进版 - 保留 v5.3 核心功能)
         
         流程:
         1. 先使用 v5.3 买卖点检测 (保留原有理论实践)
@@ -157,7 +157,7 @@ class ComprehensiveConfidenceEngine:
             signal.reversal_confidence
         )
         
-        # 【v2.0 改进】如果有 v5.3 买卖点，提升置信度
+        # 【v6.0 改进】如果有 v5.3 买卖点，提升置信度
         if v5_has_signal:
             # v5.3 买卖点确认，提升置信度 15-25%
             bonus = 0.15 if v5_signal_type in ['buy2', 'sell2'] else 0.25
@@ -343,7 +343,7 @@ class ComprehensiveConfidenceEngine:
             f"",
         ]
         
-        # 【v2.0 改进】显示 v5.3 买卖点确认信息
+        # 【v6.0 改进】显示 v5.3 买卖点确认信息
         if signal.v5_confirmed:
             lines.append(f"v5.3 确认：  ✅ {signal.v5_signal_type} (保留原有理论实践)")
             lines.append("")

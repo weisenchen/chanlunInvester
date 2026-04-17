@@ -289,7 +289,7 @@ python scripts/backtest_trend_start.py
 
 ## 📚 相关文档
 
-- `CHANLUN_V2_DETAILED_PLAN.md` - v2.0 开发计划
+- `CHANLUN_V2_DETAILED_PLAN.md` - v6.0 开发计划
 - `PHASE1_VERIFICATION_CHECKLIST.md` - Phase 1 验收清单
 - `BACKTEST_RESULTS_PHASE1_2026-04-16.md` - 回测结果报告
 

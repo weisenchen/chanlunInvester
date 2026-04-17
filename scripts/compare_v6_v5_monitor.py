@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-缠论 v2.0 vs v5.3 监控股票对比分析
+缠论 v6.0 vs v5.3 监控股票对比分析
 
-使用 v2.0 综合置信度引擎重新分析之前设置预警的股票
+使用 v6.0 综合置信度引擎重新分析之前设置预警的股票
 对比 v5.3 版本的监控结果
 """
 
@@ -38,7 +38,7 @@ MONITOR_STOCKS = [
 ]
 
 print("=" * 70)
-print("缠论 v2.0 vs v5.3 监控股票对比分析")
+print("缠论 v6.0 vs v5.3 监控股票对比分析")
 print("=" * 70)
 print(f"分析时间：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 print(f"股票池：{len(MONITOR_STOCKS)} 只监控股票")
@@ -66,7 +66,7 @@ for stock in MONITOR_STOCKS:
         
         series = KlineSeries(klines=klines, symbol=symbol, timeframe='1d')
         
-        # v2.0 分析
+        # v6.0 分析
         v2_signal = v2_engine.evaluate(series, symbol, '1d')
         v2_results.append({
             'symbol': symbol, 'name': name,
@@ -102,7 +102,7 @@ for stock in MONITOR_STOCKS:
         v5_results.append({'symbol': symbol, 'name': name, 'signals': signals, 'has_signal': len(signals) > 0})
         
         v2_emoji = {'STRONG_BUY': '🚀', 'BUY': '🟢', 'HOLD': '⚪', 'SELL': '🔴', 'STRONG_SELL': '💥'}
-        print(f"  {symbol}: v2.0 {v2_emoji.get(v2_signal.recommendation, '⚪')} {v2_signal.recommendation} ({v2_signal.comprehensive_confidence*100:.0f}%), v5.3 {', '.join(signals) if signals else '❌ 无'}")
+        print(f"  {symbol}: v6.0 {v2_emoji.get(v2_signal.recommendation, '⚪')} {v2_signal.recommendation} ({v2_signal.comprehensive_confidence*100:.0f}%), v5.3 {', '.join(signals) if signals else '❌ 无'}")
         
     except Exception as e:
         print(f"  {symbol}: ❌ {e}")
@@ -112,6 +112,6 @@ print("汇总统计")
 print(f"{'='*70}")
 v2_buy = sum(1 for r in v2_results if r['recommendation'] in ['STRONG_BUY', 'BUY'])
 v5_sig = sum(1 for r in v5_results if r['has_signal'])
-print(f"v2.0: 买入{v2_buy}/{len(v2_results)} ({v2_buy/len(v2_results)*100:.1f}%), 平均置信度{sum(r['confidence'] for r in v2_results)/len(v2_results)*100:.1f}%")
+print(f"v6.0: 买入{v2_buy}/{len(v2_results)} ({v2_buy/len(v2_results)*100:.1f}%), 平均置信度{sum(r['confidence'] for r in v2_results)/len(v2_results)*100:.1f}%")
 print(f"v5.3: 信号{v5_sig}/{len(v5_results)} ({v5_sig/len(v5_results)*100:.1f}%)")
 print(f"{'='*70}")
