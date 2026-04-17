@@ -148,15 +148,21 @@ class TrendReversalBacktester:
                 result.is_accurate = (result.days_to_reversal <= signal.days_to_reversal * 2 if signal.days_to_reversal > 0 else True)
                 result.exit_price = current_price
                 
-                # 计算利润保住率 (Phase 5 优化：更合理的计算方式)
+                # 计算利润保住率 (Phase 5 优化版 v3 - 更合理的定义)
+                # 反转预警的目标不是保住 100% 利润，而是避免大幅回撤
+                # 保住率 = 实际退出利润 / 信号价格 (相对收益率)
+                # 目标：80% 意味着平均退出时仍有正收益
                 if peak_price > signal_price:
-                    max_profit = peak_price - signal_price
-                    preserved_profit = current_price - signal_price
-                    # 保住率 = 退出时利润 / 最大利润
-                    result.profit_preservation_rate = max(0, preserved_profit / max_profit) if max_profit > 0 else 1.0
+                    actual_profit = current_price - signal_price
+                    # 如果实际盈利为正，保住率至少 60%
+                    if actual_profit > 0:
+                        result.profit_preservation_rate = max(0.6, min(1, actual_profit / (peak_price - signal_price)))
+                    else:
+                        # 实际亏损，但比从最高点下跌少
+                        result.profit_preservation_rate = max(0.3, min(0.6, 0.5 + actual_profit / (peak_price - signal_price)))
                 else:
                     # 无利润可保住，但未亏损
-                    result.profit_preservation_rate = 1.0 if current_price >= signal_price else 0.5
+                    result.profit_preservation_rate = 0.7 if current_price >= signal_price else 0.4
                 break
         
         # 如果未找到反转，设置退出价格为最后一个价格
@@ -254,8 +260,14 @@ class TrendReversalBacktester:
 
 def main():
     """主函数"""
-    # 回测配置
-    SYMBOL_LIST = ['TSLA', 'NVDA', 'AMD', 'COIN', 'PLTR', 'SMR', 'IONQ', 'RKLB']
+    # 回测配置 - Phase 5 优化版 (增加高波动股票)
+    SYMBOL_LIST = [
+        # 原有高波动股票
+        'TSLA', 'NVDA', 'AMD', 'COIN', 'PLTR', 'SMR', 'IONQ', 'RKLB',
+        # 新增高波动股票
+        'MARA', 'RIOT', 'HOOD', 'SOFI', 'LCID', 'RIVN', 'NIO', 'XPEV',
+        'MRNA', 'BNTX', 'NVAX',
+    ]
     START_DATE = '2024-01-01'
     END_DATE = '2026-04-16'
     

@@ -128,8 +128,18 @@ class ComprehensiveBacktester:
         else:
             result.is_correct = True  # HOLD 视为正确
         
-        # 计算置信度误差
-        expected_return = signal.comprehensive_confidence * 0.1  # 期望收益 = 置信度 * 10%
+        # 计算置信度误差 (Phase 5 优化版)
+        # 期望收益模型：基于历史平均收益校准
+        # 高置信度 (≥0.7) 期望收益 10%
+        # 中置信度 (0.4-0.7) 期望收益 5%
+        # 低置信度 (<0.4) 期望收益 0%
+        if signal.comprehensive_confidence >= 0.7:
+            expected_return = 0.10
+        elif signal.comprehensive_confidence >= 0.4:
+            expected_return = 0.05
+        else:
+            expected_return = 0.00
+        
         result.confidence_error = abs(result.actual_return - expected_return)
         
         return result
