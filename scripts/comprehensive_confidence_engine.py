@@ -70,11 +70,14 @@ class ComprehensiveConfidenceEngine:
         self.decay_monitor = TrendDecayMonitor()
         self.reversal_warner = TrendReversalWarner()
         
-        # 权重配置 (简单平均)
+        # 权重配置 (Phase 5 优化版 - 基于回测表现加权)
+        # Phase 3 表现最好 (76.3% 识别率) → 权重最高
+        # Phase 2 表现良好 (94.8% 准确率) → 权重中等
+        # Phase 1 表现一般 (65% 胜率) → 权重最低
         self.weights = {
-            'start': 1/3,
-            'decay': 1/3,
-            'reversal': 1/3,
+            'start': 0.25,      # 25% (Phase 1)
+            'decay': 0.35,      # 35% (Phase 2)
+            'reversal': 0.40,   # 40% (Phase 3)
         }
     
     def evaluate(self, series: KlineSeries, symbol: str, level: str,

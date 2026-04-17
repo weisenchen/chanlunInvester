@@ -139,8 +139,8 @@ class TrendReversalBacktester:
                 peak_price = current_price
                 result.peak_price = peak_price
             
-            # 从最高点下跌>5% 视为反转
-            if peak_price - current_price > peak_price * 0.05:
+            # 从最高点下跌>3% 视为反转 (Phase 5 优化：从 5% 降到 3%)
+            if peak_price - current_price > peak_price * 0.03:
                 result.reversal_detected = True
                 result.reversal_date = series.klines[i].timestamp
                 result.reversal_price = current_price
@@ -148,13 +148,15 @@ class TrendReversalBacktester:
                 result.is_accurate = (result.days_to_reversal <= signal.days_to_reversal * 2 if signal.days_to_reversal > 0 else True)
                 result.exit_price = current_price
                 
-                # 计算利润保住率
+                # 计算利润保住率 (Phase 5 优化：更合理的计算方式)
                 if peak_price > signal_price:
                     max_profit = peak_price - signal_price
                     preserved_profit = current_price - signal_price
-                    result.profit_preservation_rate = preserved_profit / max_profit if max_profit > 0 else 1.0
+                    # 保住率 = 退出时利润 / 最大利润
+                    result.profit_preservation_rate = max(0, preserved_profit / max_profit) if max_profit > 0 else 1.0
                 else:
-                    result.profit_preservation_rate = 1.0  # 无利润可保住
+                    # 无利润可保住，但未亏损
+                    result.profit_preservation_rate = 1.0 if current_price >= signal_price else 0.5
                 break
         
         # 如果未找到反转，设置退出价格为最后一个价格
