@@ -14,6 +14,7 @@ from pathlib import Path
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 from datetime import datetime
+import numpy as np
 
 # Add paths
 sys.path.insert(0, str(Path(__file__).parent.parent / "python-layer"))
@@ -50,6 +51,10 @@ class ComprehensiveSignal:
     # 风险评估
     risk_level: str = 'MEDIUM'  # 风险等级
     confidence_range: str = 'MEDIUM'  # 置信度区间
+    
+    # v5.3 确认信息
+    v5_confirmed: bool = False  # v5.3 买卖点确认
+    v5_signal_type: Optional[str] = None  # v5.3 信号类型 (buy1/buy2/sell1/sell2)
 
 
 class ComprehensiveConfidenceEngine:
@@ -64,27 +69,54 @@ class ComprehensiveConfidenceEngine:
     5. 操作建议生成
     """
     
-    def __init__(self):
+    def __init__(self, use_v5_filter=True):
+        """
+        综合置信度引擎
+        
+        Args:
+            use_v5_filter: 是否使用 v5.3 买卖点过滤 (默认 True)
+                          True: 先检测 v5.3 买卖点，再计算综合置信度
+                          False: 直接计算综合置信度
+        """
         # 检测器
         self.start_detector = TrendStartDetector()
         self.decay_monitor = TrendDecayMonitor()
         self.reversal_warner = TrendReversalWarner()
         
-        # 权重配置 (Phase 5 优化版 - 基于回测表现加权)
-        # Phase 3 表现最好 (76.3% 识别率) → 权重最高
-        # Phase 2 表现良好 (94.8% 准确率) → 权重中等
-        # Phase 1 表现一般 (65% 胜率) → 权重最低
+        # v5.3 买卖点检测器 (保留原有功能)
+        from trading_system.fractal import FractalDetector
+        from trading_system.pen import PenCalculator, PenConfig
+        from trading_system.indicators import MACDIndicator
+        self.fractal_detector = FractalDetector()
+        self.pen_calculator = PenCalculator(PenConfig(
+            use_new_definition=True,
+            strict_validation=True,
+            min_klines_between_turns=3
+        ))
+        self.macd = MACDIndicator(fast=12, slow=26, signal=9)
+        
+        # 是否使用 v5.3 过滤
+        self.use_v5_filter = use_v5_filter
+        
+        # 权重配置 (v2.0 优化版 - 基于 v5.3 过滤)
+        # v5.3 过滤后，Phase 1-3 权重调整
         self.weights = {
-            'start': 0.25,      # 25% (Phase 1)
-            'decay': 0.35,      # 35% (Phase 2)
-            'reversal': 0.40,   # 40% (Phase 3)
+            'start': 0.30,      # 30% (起势)
+            'decay': 0.35,      # 35% (衰减)
+            'reversal': 0.35,   # 35% (反转)
         }
     
     def evaluate(self, series: KlineSeries, symbol: str, level: str,
                  small_level_series: Optional[KlineSeries] = None,
                  large_level_series: Optional[KlineSeries] = None) -> ComprehensiveSignal:
         """
-        综合评估
+        综合评估 (v2.0 改进版 - 保留 v5.3 核心功能)
+        
+        流程:
+        1. 先使用 v5.3 买卖点检测 (保留原有理论实践)
+        2. 如果有 v5.3 买卖点，提升置信度
+        3. 再计算 Phase 1-3 综合置信度
+        4. 综合评估生成操作建议
         
         Args:
             series: K 线序列 (当前级别)
@@ -103,6 +135,9 @@ class ComprehensiveConfidenceEngine:
             timestamp=datetime.now()
         )
         
+        # 【v5.3 核心功能】先检测买卖点 (保留原有理论实践)
+        v5_has_signal, v5_signal_type = self._detect_v5_buy_sell_points(series, level)
+        
         # 1. Phase 1: 趋势起势检测
         signal.start_signal = self.start_detector.detect(series, symbol, level, small_level_series)
         signal.start_confidence = signal.start_signal.start_probability
@@ -115,12 +150,24 @@ class ComprehensiveConfidenceEngine:
         signal.reversal_signal = self.reversal_warner.warn(series, symbol, level, small_level_series, large_level_series)
         signal.reversal_confidence = 1.0 - signal.reversal_signal.reversal_probability  # 反转概率越低越好
         
-        # 4. 综合置信度计算 (简单平均)
-        signal.comprehensive_confidence = self._calculate_comprehensive_confidence(
+        # 4. 综合置信度计算
+        base_confidence = self._calculate_comprehensive_confidence(
             signal.start_confidence,
             signal.decay_confidence,
             signal.reversal_confidence
         )
+        
+        # 【v2.0 改进】如果有 v5.3 买卖点，提升置信度
+        if v5_has_signal:
+            # v5.3 买卖点确认，提升置信度 15-25%
+            bonus = 0.15 if v5_signal_type in ['buy2', 'sell2'] else 0.25
+            signal.comprehensive_confidence = min(1.0, base_confidence + bonus)
+            signal.v5_confirmed = True
+            signal.v5_signal_type = v5_signal_type
+        else:
+            signal.comprehensive_confidence = base_confidence
+            signal.v5_confirmed = False
+            signal.v5_signal_type = None
         
         # 5. 操作建议生成
         signal.recommendation = self._get_recommendation(signal.comprehensive_confidence)
@@ -131,6 +178,68 @@ class ComprehensiveConfidenceEngine:
         signal.confidence_range = self._get_confidence_range(signal.comprehensive_confidence)
         
         return signal
+    
+    def _detect_v5_buy_sell_points(self, series: KlineSeries, level: str) -> Tuple[bool, Optional[str]]:
+        """
+        v5.3 买卖点检测 (保留原有理论实践)
+        
+        Returns:
+            (是否有信号，信号类型)
+        """
+        fractals = self.fractal_detector.detect_all(series)
+        top_fractals = [f for f in fractals if f.is_top]
+        bottom_fractals = [f for f in fractals if not f.is_top]
+        pens = self.pen_calculator.identify_pens(series)
+        prices = [k.close for k in series.klines]
+        macd_data = self.macd.calculate(prices)
+        
+        # buy1 (背驰)
+        if len(bottom_fractals) >= 2:
+            last_low = bottom_fractals[-1]
+            prev_low = bottom_fractals[-2]
+            if last_low.price < prev_low.price:
+                last_idx = last_low.kline_index
+                prev_idx = prev_low.kline_index
+                if last_idx < len(macd_data) and prev_idx < len(macd_data):
+                    last_macd = macd_data[last_idx].histogram
+                    prev_macd = macd_data[prev_idx].histogram
+                    if last_macd > prev_macd:
+                        return True, 'buy1'
+        
+        # buy2 (不破前低)
+        if len(bottom_fractals) >= 2 and pens and pens[-1].is_up:
+            last_low = bottom_fractals[-1]
+            prev_low = bottom_fractals[-2]
+            if last_low.price > prev_low.price:
+                current_price = series.klines[-1].close
+                distance = (current_price - last_low.price) / last_low.price
+                if 0 < distance <= 0.015:
+                    return True, 'buy2'
+        
+        # sell1 (背驰)
+        if len(top_fractals) >= 2:
+            last_high = top_fractals[-1]
+            prev_high = top_fractals[-2]
+            if last_high.price > prev_high.price:
+                last_idx = last_high.kline_index
+                prev_idx = prev_high.kline_index
+                if last_idx < len(macd_data) and prev_idx < len(macd_data):
+                    last_macd = macd_data[last_idx].histogram
+                    prev_macd = macd_data[prev_idx].histogram
+                    if last_macd < prev_macd:
+                        return True, 'sell1'
+        
+        # sell2 (不过前高)
+        if len(top_fractals) >= 2 and pens and not pens[-1].is_up:
+            last_high = top_fractals[-1]
+            prev_high = top_fractals[-2]
+            if last_high.price < prev_high.price:
+                current_price = series.klines[-1].close
+                distance = (last_high.price - current_price) / last_high.price
+                if 0 < distance <= 0.015:
+                    return True, 'sell2'
+        
+        return False, None
     
     def _calculate_comprehensive_confidence(self, start: float, decay: float, reversal: float) -> float:
         """
@@ -232,6 +341,14 @@ class ComprehensiveConfidenceEngine:
             f"置信度区间：{signal.confidence_range}",
             f"风险等级：  {risk_emoji.get(signal.risk_level, '')} {signal.risk_level}",
             f"",
+        ]
+        
+        # 【v2.0 改进】显示 v5.3 买卖点确认信息
+        if signal.v5_confirmed:
+            lines.append(f"v5.3 确认：  ✅ {signal.v5_signal_type} (保留原有理论实践)")
+            lines.append("")
+        
+        lines.extend([
             f"各维度置信度:",
             f"   起势检测：{signal.start_confidence*100:.0f}%",
             f"   衰减检测：{signal.decay_confidence*100:.0f}%",
@@ -240,7 +357,7 @@ class ComprehensiveConfidenceEngine:
             f"操作建议：{recommendation_emoji.get(signal.recommendation, '')} {signal.recommendation}",
             f"建议仓位：{signal.position_ratio*100:.0f}%",
             "",
-        ]
+        ])
         
         # 各维度详情
         if signal.start_signal and signal.start_signal.start_probability > 0.3:
