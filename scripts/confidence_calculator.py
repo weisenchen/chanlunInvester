@@ -29,8 +29,19 @@ import sys
 
 # Add scripts to path
 sys.path.insert(0, str(Path(__file__).parent))
+sys.path.insert(0, str(Path(__file__).parent.parent / "python-layer"))
 from volume_confirmation import VolumeConfirmation, VolumeConfirmationResult
 from macd_advanced_analysis import MACDAdvancedAnalyzer, MACDComprehensiveResult
+
+# v6.0 新增：中枢动量可信度整合
+try:
+    from trading_system.center_momentum_confidence import (
+        CenterMomentumConfidenceCalculator,
+        CenterMomentumConfidenceResult
+    )
+    CENTER_MOMENTUM_ENABLED = True
+except ImportError:
+    CENTER_MOMENTUM_ENABLED = False
 
 
 class ReliabilityLevel(Enum):
@@ -80,6 +91,13 @@ class ConfidenceFactors:
     industry_score: float = 0.5
     fundamental_score: float = 0.5
     sentiment_score: float = 0.5
+    
+    # 中枢动量因子 (v6.0 新增)
+    center_momentum_adjustment: float = 0.0  # 中枢动量调整值 (-0.4 到 +0.4)
+    center_count: int = 0  # 中枢数量
+    center_position: str = "unknown"  # 中枢位置
+    momentum_status: str = "unknown"  # 动量状态
+    divergence_risk: bool = False  # 背驰风险
 
 
 @dataclass
@@ -155,7 +173,9 @@ class ComprehensiveConfidenceCalculator:
                   macd_5m: Optional[List] = None,
                   multi_level_confirmed: bool = False,
                   multi_level_count: int = 0,
-                  external_factors: Optional[Dict] = None) -> ComprehensiveConfidenceResult:
+                  external_factors: Optional[Dict] = None,
+                  centers: Optional[List] = None,
+                  segments: Optional[List] = None) -> ComprehensiveConfidenceResult:
         """
         计算综合可信度
         
@@ -176,6 +196,8 @@ class ComprehensiveConfidenceCalculator:
             multi_level_confirmed: 多级别是否确认
             multi_level_count: 确认的级别数量
             external_factors: 外部因子 (行业/基本面/消息面得分)
+            centers: 中枢列表 (v6.0 新增，用于中枢动量分析)
+            segments: 线段列表 (v6.0 新增，用于中枢动量分析)
         """
         factors = ConfidenceFactors(
             chanlun_base=chanlun_base_confidence,
@@ -189,6 +211,40 @@ class ComprehensiveConfidenceCalculator:
             factors.fundamental_score = external_factors.get('fundamental', 0.5)
             factors.sentiment_score = external_factors.get('sentiment', 0.5)
         
+        # 【v6.0 新增】中枢动量分析
+        center_momentum_result = None
+        if CENTER_MOMENTUM_ENABLED and centers and segments:
+            try:
+                center_calc = CenterMomentumConfidenceCalculator()
+                center_momentum_result = center_calc.calculate(
+                    symbol=symbol,
+                    level=level,
+                    price=price,
+                    centers=centers,
+                    segments=segments,
+                    level_name=level
+                )
+                
+                # 填充因子
+                factors.center_momentum_adjustment = center_momentum_result.total_bonus
+                factors.center_count = center_momentum_result.center_count
+                factors.center_position = center_momentum_result.center_position.value
+                factors.momentum_status = center_momentum_result.momentum_status.value
+                factors.divergence_risk = center_momentum_result.divergence_risk
+                
+                # 应用中枢动量调整到缠论基础置信度
+                adjusted_chanlun_base = chanlun_base_confidence + center_momentum_result.total_bonus
+                
+                # 背驰风险强制降级
+                if center_momentum_result.divergence_risk:
+                    adjusted_chanlun_base = min(adjusted_chanlun_base, 0.40)
+                
+                # 限制范围
+                factors.chanlun_base = max(0.0, min(1.0, adjusted_chanlun_base))
+                
+            except Exception as e:
+                # 中枢动量分析失败，使用原始值
+                factors.center_momentum_adjustment = 0.0
         # 1. 成交量分析
         volume_result = self._analyze_volume(
             signal_type, level, prices, volumes,
@@ -213,8 +269,10 @@ class ComprehensiveConfidenceCalculator:
         factors.macd_resonance = macd_result.resonance.resonance_type if macd_result.resonance else 'unknown'
         
         # 3. 计算各维度得分
+        # 缠论基础得分 (已包含中枢动量调整)
         chanlun_score = factors.chanlun_base
         
+        # 成交量得分
         volume_score = 0.5 + factors.volume_confidence_boost
         volume_score = max(0, min(1, volume_score))
         
@@ -253,6 +311,12 @@ class ComprehensiveConfidenceCalculator:
             '多级别': multi_level_score * self.WEIGHTS['multi_level'],
             '外部因子': external_score * self.WEIGHTS['external'],
         }
+        
+        # 【v6.0 新增】中枢动量调整明细
+        if CENTER_MOMENTUM_ENABLED and center_momentum_result:
+            breakdown['中枢动量调整'] = factors.center_momentum_adjustment
+            breakdown['缠论基础 (原始)'] = chanlun_base_confidence * self.WEIGHTS['chanlun_base']
+            breakdown['缠论基础 (调整后)'] = factors.chanlun_base * self.WEIGHTS['chanlun_base']
         
         # 8. 生成分析总结
         analysis_summary = self._generate_summary(

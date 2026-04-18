@@ -1,0 +1,38 @@
+{
+  "version": "6.0-beta",
+  "enabled": true,
+  "description": "中枢动量可信度整合配置",
+  "parameters": {
+    "position_bonus": {
+      "BEFORE_FIRST": 0.0,
+      "IN_FIRST": 0.05,
+      "AFTER_FIRST": 0.1,
+      "IN_SECOND": 0.1,
+      "AFTER_SECOND": 0.15,
+      "IN_THIRD": -0.1,
+      "AFTER_THIRD": -0.25,
+      "EXTENSION": -0.05
+    },
+    "momentum_bonus": {
+      "INCREASING": 0.1,
+      "STABLE": 0.0,
+      "DECREASING": -0.1,
+      "UNKNOWN": 0.0
+    },
+    "continuation_threshold_high": 70.0,
+    "continuation_threshold_low": 50.0,
+    "continuation_bonus": 0.1,
+    "divergence_risk_threshold": 0.5,
+    "divergence_risk_forced_cap": 0.4
+  },
+  "alert_enhancement": {
+    "show_center_info": true,
+    "show_adjustment": true,
+    "show_divergence_warning": true
+  },
+  "backtest_validation": {
+    "target_win_rate_improvement": 0.05,
+    "target_divergence_avoidance": 0.8,
+    "target_drawdown_reduction": 0.2
+  }
+}

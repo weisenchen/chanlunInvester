@@ -31,6 +31,9 @@ from volume_confirmation import VolumeConfirmation
 from macd_advanced_analysis import MACDAdvancedAnalyzer
 from confidence_calculator import ComprehensiveConfidenceCalculator
 
+# v6.0: Import center momentum confidence
+from trading_system.center_momentum_confidence import CenterMomentumConfidenceCalculator
+
 # Configuration
 TELEGRAM_CHAT_ID = "8365377574"
 ALERT_LOG = "/home/wei/.openclaw/workspace/chanlunInvester/alerts.log"
@@ -657,10 +660,11 @@ def update_alert_state(symbol: str, signal_type: str, level: str, price: float):
     save_alert_state(state)
 
 
-def calculate_comprehensive_confidence(symbol: str, signal: dict, level: str, all_macd_data: dict = None) -> dict:
+def calculate_comprehensive_confidence(symbol: str, signal: dict, level: str, all_macd_data: dict = None,
+                                        centers: list = None, segments: list = None) -> dict:
     """
-    Calculate comprehensive confidence for a signal
-    计算信号的综合可信度
+    Calculate comprehensive confidence for a signal (v6.0 with center momentum)
+    计算信号的综合可信度 (v6.0 整合中枢动量)
     
     整合：
     1. 缠论价格结构 (基础)
@@ -668,15 +672,18 @@ def calculate_comprehensive_confidence(symbol: str, signal: dict, level: str, al
     3. MACD 多维度分析 (零轴 + 面积 + 共振)
     4. 多级别确认
     5. 外部因子 (可选)
+    6. 中枢动量 (v6.0 新增)
     
     Args:
         symbol: 股票代码
         signal: 买卖点信号字典
         level: 级别 (5m, 30m, 1d)
         all_macd_data: 各级别 MACD 数据 {'1d': [...], '30m': [...], '5m': [...]}
+        centers: 中枢列表 (v6.0 新增)
+        segments: 线段列表 (v6.0 新增)
     
     Returns:
-        综合可信度结果字典
+        综合可信度结果字典 (含中枢动量信息)
     """
     try:
         calculator = ComprehensiveConfidenceCalculator()
@@ -701,7 +708,7 @@ def calculate_comprehensive_confidence(symbol: str, signal: dict, level: str, al
         div_start = data.get('prev_low_idx', data.get('prev_high_idx', None))
         div_end = data.get('last_low_idx', data.get('last_high_idx', None))
         
-        # 计算综合可信度
+        # 计算综合可信度 (v6.0: 添加 centers 和 segments 参数)
         result = calculator.calculate(
             symbol=symbol,
             signal_type=signal['type'].split()[0],  # buy1, buy2, etc.
@@ -717,10 +724,13 @@ def calculate_comprehensive_confidence(symbol: str, signal: dict, level: str, al
             macd_30m=all_macd_data.get('30m') if all_macd_data else None,
             macd_5m=all_macd_data.get('5m') if all_macd_data else None,
             multi_level_confirmed=signal.get('resonance') == 'multi_level_confirmed',
-            multi_level_count=2 if signal.get('resonance') == 'multi_level_confirmed' else 1
+            multi_level_count=2 if signal.get('resonance') == 'multi_level_confirmed' else 1,
+            centers=centers,      # v6.0 新增
+            segments=segments     # v6.0 新增
         )
         
-        return {
+        # v6.0: 构建返回结果 (含中枢动量信息)
+        return_dict = {
             'final_confidence': result.final_confidence,
             'reliability_level': result.reliability_level.value,
             'operation_suggestion': result.operation_suggestion.value,
@@ -731,8 +741,20 @@ def calculate_comprehensive_confidence(symbol: str, signal: dict, level: str, al
             'macd_divergence': result.factors.macd_divergence,
             'macd_reliability': result.factors.macd_reliability,
             'macd_zero_axis': result.factors.macd_zero_axis,
-            'macd_resonance': result.factors.macd_resonance
+            'macd_resonance': result.factors.macd_resonance,
         }
+        
+        # v6.0 新增：中枢动量信息
+        if hasattr(result.factors, 'center_momentum_adjustment'):
+            return_dict['center_momentum'] = {
+                'adjustment': result.factors.center_momentum_adjustment,
+                'center_count': result.factors.center_count,
+                'center_position': result.factors.center_position,
+                'momentum_status': result.factors.momentum_status,
+                'divergence_risk': result.factors.divergence_risk,
+            }
+        
+        return return_dict
         
     except Exception as e:
         print(f"    ⚠️ 综合可信度计算失败：{e}")
@@ -826,6 +848,28 @@ def format_detailed_alert(symbol: str, signal: dict, level: str, confidence_resu
     elif resonance_status == 'single_level_high_confidence':
         resonance_badge = "\n🎯 高置信度单级别信号"
     
+    # v6.0: 中枢动量信息
+    center_momentum_text = ""
+    if 'center_momentum' in confidence_result:
+        cm = confidence_result['center_momentum']
+        adj = cm.get('adjustment', 0) * 100
+        adj_str = f" ⬆️ +{adj:.0f}%" if adj > 5 else f" ⬇️ {adj:.0f}%" if adj < -5 else ""
+        
+        divergence_warning = ""
+        if cm.get('divergence_risk'):
+            divergence_warning = "\n   ⚠️ **背驰风险：高**"
+        else:
+            divergence_warning = "\n   ✅ 背驰风险：低"
+        
+        center_momentum_text = f"""
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📊 中枢分析 (v6.0)
+   中枢数量：{cm.get('center_count', 0)}
+   当前位置：{cm.get('center_position', 'unknown')}
+   动量状态：{cm.get('momentum_status', 'unknown')}{divergence_warning}
+   可信度调整：{adj_str if adj_str.strip() else '±0%'}
+"""
+    
     # 可信度分解
     breakdown = confidence_result.get('breakdown', {})
     breakdown_text = ""
@@ -839,8 +883,17 @@ def format_detailed_alert(symbol: str, signal: dict, level: str, confidence_resu
    多级别：  {breakdown.get('多级别', 0)*100:.0f}%
 """
     
-    # 构建消息
+    # 构建消息 (v6.0: 添加中枢分析)
     price_str = f"USD {signal['price']:.2f}"
+    
+    # v6.0: 显示置信度调整
+    conf = confidence_result.get('final_confidence', 0) * 100
+    if 'center_momentum' in confidence_result:
+        adj = confidence_result['center_momentum'].get('adjustment', 0) * 100
+        adj_str = f" ⬆️ +{adj:.0f}%" if adj > 5 else f" ⬇️ {adj:.0f}%" if adj < -5 else ""
+        conf_display = f"{conf:.0f}%{adj_str}"
+    else:
+        conf_display = f"{conf:.0f}%"
     
     message = f"""{emoji} **{symbol} 缠论买卖点提醒**{resonance_badge}
 
@@ -856,10 +909,10 @@ def format_detailed_alert(symbol: str, signal: dict, level: str, confidence_resu
 🔍 验证状态
    {volume_status}
    {macd_status}
-
+{center_momentum_text}
 ═══════════════════════════════════════
 {reliability_badge}
-综合置信度：{confidence_result.get('final_confidence', 0)*100:.0f}%
+综合置信度：**{conf_display}**
 操作建议：{suggestion_display}
 ═══════════════════════════════════════
 {breakdown_text}
@@ -965,10 +1018,11 @@ def check_multi_level_resonance(symbol: str, levels: list, all_signals: dict) ->
     return resonance_signals
 
 
-def send_telegram_alert(symbol: str, signals: list, level: str, all_macd_data: dict = None):
+def send_telegram_alert(symbol: str, signals: list, level: str, all_macd_data: dict = None,
+                         centers: list = None, segments: list = None):
     """
     Send Telegram alert via OpenClaw message tool with anti-spam protection
-    发送详细警报，包含触发原因和综合可信度分析
+    发送详细警报，包含触发原因和综合可信度分析 (v6.0 含中枢动量)
     """
     if not signals:
         return
@@ -979,12 +1033,14 @@ def send_telegram_alert(symbol: str, signals: list, level: str, all_macd_data: d
         if not should_send_alert(symbol, signal_type, level, signal['price']):
             continue
         
-        # 计算综合可信度
+        # 计算综合可信度 (v6.0: 传递中枢数据)
         confidence_result = calculate_comprehensive_confidence(
             symbol=symbol,
             signal=signal,
             level=level,
-            all_macd_data=all_macd_data
+            all_macd_data=all_macd_data,
+            centers=centers,      # v6.0 新增
+            segments=segments     # v6.0 新增
         )
         
         # 只推送中高可靠性信号
@@ -1062,6 +1118,10 @@ def analyze_symbol(symbol_config):
         seg_calc = SegmentCalculator(min_pens=3)
         segments = seg_calc.detect_segments(pens)
         
+        # v6.0: Detect centers (中枢检测)
+        center_det = CenterDetector(min_segments=3)
+        centers = center_det.detect_centers(segments)
+        
         # Calculate MACD
         prices = [k.close for k in series.klines]
         macd = MACDIndicator(fast=12, slow=26, signal=9)
@@ -1073,6 +1133,12 @@ def analyze_symbol(symbol_config):
         
         # Detect buy/sell points
         signals = detect_buy_sell_points(series, fractals, pens, segments, macd_data, level)
+        
+        # v6.0: 打印中枢信息
+        if centers:
+            print(f"    中枢：{len(centers)} 个")
+            for i, c in enumerate(centers):
+                print(f"      中枢{i+1}: ZG={c.zg:.2f}, ZD={c.zd:.2f}")
         
         print(f"    分型：{len(fractals)} (顶：{len(top_fractals)}, 底：{len(bottom_fractals)})")
         print(f"    笔：{len(pens)}")
@@ -1093,8 +1159,21 @@ def analyze_symbol(symbol_config):
     print(f"    ✅ 共振过滤后：{len(resonance_signals)} 条")
     
     # Send alerts only for resonance-confirmed signals with comprehensive confidence
+    # v6.0: 传递中枢数据 (使用主要级别的中枢)
     if resonance_signals:
-        send_telegram_alert(symbol, resonance_signals, levels[0], all_macd_data)
+        # 使用第一个级别的中枢数据 (通常是日线或 30 分钟)
+        primary_level = levels[0]
+        primary_centers = signals_by_level.get(primary_level, [{}])[0].get('centers', []) if signals_by_level.get(primary_level) else []
+        primary_segments = segments  # 使用当前级别的线段
+        
+        send_telegram_alert(
+            symbol=symbol,
+            signals=resonance_signals,
+            level=levels[0],
+            all_macd_data=all_macd_data,
+            centers=primary_centers if primary_centers else centers,
+            segments=primary_segments
+        )
     else:
         print(f"    ⏭️ 无共振确认信号，跳过警报")
     
