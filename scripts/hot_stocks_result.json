@@ -1,0 +1,89 @@
+{
+  "timestamp": "2026-04-17T09:05:37.328368",
+  "total_scanned": 27,
+  "strong_buy_count": 5,
+  "buy_count": 2,
+  "strong_buy_stocks": [
+    {
+      "symbol": "META",
+      "price": 676.8699951171875,
+      "signal": "BUY",
+      "strength": 6.0,
+      "reasoning": [
+        "✓ 1d上涨线段 (+3.0)",
+        "✓ 30m上涨线段 (+2.0)",
+        "✓ 5m上涨线段 (+1.0)"
+      ]
+    },
+    {
+      "symbol": "AMZN",
+      "price": 249.6999969482422,
+      "signal": "BUY",
+      "strength": 6.0,
+      "reasoning": [
+        "✓ 1d上涨线段 (+3.0)",
+        "✓ 30m上涨线段 (+2.0)",
+        "✓ 5m上涨线段 (+1.0)"
+      ]
+    },
+    {
+      "symbol": "SMH",
+      "price": 454.79998779296875,
+      "signal": "BUY",
+      "strength": 6.0,
+      "reasoning": [
+        "✓ 1d上涨线段 (+3.0)",
+        "✓ 30m上涨线段 (+2.0)",
+        "✓ 5m上涨线段 (+1.0)"
+      ]
+    },
+    {
+      "symbol": "TQQQ",
+      "price": 56.43000030517578,
+      "signal": "BUY",
+      "strength": 6.0,
+      "reasoning": [
+        "✓ 1d上涨线段 (+3.0)",
+        "✓ 30m上涨线段 (+2.0)",
+        "✓ 5m上涨线段 (+1.0)"
+      ]
+    },
+    {
+      "symbol": "UVIX",
+      "price": 5.789999961853027,
+      "signal": "STRONG_BUY",
+      "strength": 10.0,
+      "reasoning": [
+        "✗ 1d下跌线段 (-3.0)",
+        "🟢 1d底背驰 (强度:210.35) (+6.0)",
+        "🟢 1d第一类买点 (+6.0)",
+        "✓ 30m上涨线段 (+2.0)",
+        "✗ 5m下跌线段 (-1.0)"
+      ]
+    }
+  ],
+  "buy_stocks": [
+    {
+      "symbol": "TSLA",
+      "price": 388.8999938964844,
+      "signal": "BUY",
+      "strength": 4.0,
+      "reasoning": [
+        "✓ 1d上涨线段 (+3.0)",
+        "✓ 30m上涨线段 (+2.0)",
+        "✗ 5m下跌线段 (-1.0)"
+      ]
+    },
+    {
+      "symbol": "ORCL",
+      "price": 178.33999633789062,
+      "signal": "BUY",
+      "strength": 4.0,
+      "reasoning": [
+        "✓ 1d上涨线段 (+3.0)",
+        "✓ 30m上涨线段 (+2.0)",
+        "✗ 5m下跌线段 (-1.0)"
+      ]
+    }
+  ]
+}
