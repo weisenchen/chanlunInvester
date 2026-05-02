@@ -21,8 +21,9 @@ from .indicators import MACD, MACDIndicator
 from .monitor import ChanLunMonitor, MonitorConfig, AnalysisResult
 from .backtest import BacktestEngine, BacktestConfig, BacktestResult, Trade
 from .telegram_bot import ChanLunBot, send_alert, send_analysis_report
+from .divergence import DivergenceDetector, DivergenceResult, ZeroPullbackResult, detect_divergence
 
-__version__ = "0.4.0"  # Added backtest and Telegram bot
+__version__ = "0.5.0"  # Added divergence detection module
 
 __all__ = [
     # Core
@@ -59,4 +60,10 @@ __all__ = [
     "ChanLunBot",
     "send_alert",
     "send_analysis_report",
+
+    # Divergence Detection (New!)
+    "DivergenceDetector",
+    "DivergenceResult",
+    "ZeroPullbackResult",
+    "detect_divergence",
 ]

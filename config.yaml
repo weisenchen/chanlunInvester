@@ -1,0 +1,111 @@
+# ChanLun Invester Configuration
+# 缠论智能监控系统配置文件
+# Edit this file to change symbols, thresholds, and alert settings
+
+# === Telegram ===
+telegram:
+  chat_id: "8365377574"
+  # bot_token is read from TELEGRAM_BOT_TOKEN env var or ~/.hermes/.env
+  parse_mode: "HTML"  # HTML or MarkdownV2
+
+# === Symbols to Monitor ===
+symbols:
+  - symbol: "CNQ.TO"
+    name: "Canadian Natural Resources"
+    levels: ["30m", "1d"]
+  - symbol: "PAAS.TO"
+    name: "Pan American Silver"
+    levels: ["30m", "1d"]
+  - symbol: "TECK"
+    name: "Teck Resources Limited"
+    levels: ["30m", "1d"]
+  - symbol: "SMR"
+    name: "NuScale Power"
+    levels: ["30m", "1d"]
+  - symbol: "IONQ"
+    name: "IonQ Inc"
+    levels: ["30m", "1d"]
+  - symbol: "TSLA"
+    name: "Tesla Inc"
+    levels: ["30m", "1d"]
+  - symbol: "EOSE"
+    name: "Eos Energy Enterprises"
+    levels: ["30m", "1d"]
+  - symbol: "OKLO"
+    name: "Oklo Inc"
+    levels: ["30m", "1d"]
+  - symbol: "RKLB"
+    name: "Rocket Lab USA"
+    levels: ["30m", "1d"]
+
+# === Data Fetching ===
+data:
+  # Number of klines to fetch per level
+  count_per_level:
+    "5m": 200
+    "30m": 300
+    "1d": 500
+    "1wk": 250
+  # Yahoo Finance period mapping
+  period_map:
+    "5m": "5d"
+    "30m": "30d"
+    "1d": "1y"
+    "1wk": "5y"
+  # Retry settings
+  max_retries: 2
+  retry_delay_seconds: 5
+
+# === BSP Thresholds ===
+thresholds:
+  "5m":
+    bsp2_pct: 0.01       # 1% max pullback for Buy2
+    bsp1_min_strength: 2.0  # Minimum divergence strength for BSP1
+    min_distance: 0.005   # 0.5% min distance from fractal
+    bsp3_pct: 0.02       # 2% max pullback for Buy3
+    bsp3_klines: 3
+  "30m":
+    bsp2_pct: 0.015
+    bsp1_min_strength: 3.0
+    min_distance: 0.008
+    bsp3_pct: 0.03
+    bsp3_klines: 5
+  "1d":
+    bsp2_pct: 0.03
+    bsp1_min_strength: 5.0
+    min_distance: 0.01
+    bsp3_pct: 0.05
+    bsp3_klines: 10
+
+# === Multi-Level Fusion Weights ===
+fusion_weights:
+  "5m":
+    direction: 1.0
+    signal: 2.0
+  "30m":
+    direction: 2.0
+    signal: 3.0
+  "1d":
+    direction: 3.0
+    signal: 5.0
+  "1wk":
+    direction: 4.0
+    signal: 8.0
+
+# Fusion thresholds
+fusion:
+  strong_buy: 6.0
+  buy: 3.0
+  strong_sell: -6.0
+  sell: -3.0
+
+# === Anti-Spam ===
+antispam:
+  min_price_change_pct: 0.003   # 0.3%
+  silence_period_minutes: 60
+  state_ttl_hours: 24
+
+# === Paths ===
+paths:
+  alert_log: "/home/wei/.openclaw/workspace/chanlunInvester/alerts.log"
+  alert_state_file: "/home/wei/.openclaw/workspace/chanlunInvester/.alert_state.json"
