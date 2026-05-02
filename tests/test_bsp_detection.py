@@ -9,7 +9,8 @@ import os
 from pathlib import Path
 from datetime import datetime, timedelta
 import random, math
-sys.path.insert(0, str(Path(__file__).parent.parent / "python-layer"))
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from trading_system.kline import Kline, KlineSeries
 from trading_system.fractal import FractalDetector

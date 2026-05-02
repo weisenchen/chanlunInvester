@@ -21,7 +21,7 @@ import fcntl
 def load_config(config_path=None):
     """Load config.yaml, override with env vars where applicable."""
     if config_path is None:
-        config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.yaml")
+        config_path = str(Path(__file__).parent.parent / "config" / "config.yaml")
     
     # Default config
     cfg = {
@@ -108,8 +108,8 @@ ALERT_STATE_FILE = CONFIG["paths"]["alert_state_file"]
 MIN_PRICE_CHANGE = ANTISPAM["min_price_change_pct"]
 SILENCE_PERIOD_MINUTES = ANTISPAM["silence_period_minutes"]
 
-# Add python-layer to path
-sys.path.insert(0, str(Path(__file__).parent / "python-layer"))
+# Add src/ to path for trading_system imports
+sys.path.insert(0, str(Path(__file__).parent))
 
 # Import trading system components
 from trading_system.kline import Kline, KlineSeries, TimeFrame
