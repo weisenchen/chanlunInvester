@@ -101,11 +101,48 @@ fusion:
 
 # === Anti-Spam ===
 antispam:
-  min_price_change_pct: 0.003   # 0.3%
+  min_price_change_pct: 0.003
   silence_period_minutes: 60
   state_ttl_hours: 24
+
+# === Hot Stock Ranking ===
+hot_stock:
+  enabled: true
+  ranking_weights:
+    fusion: 0.35
+    trend: 0.25
+    volume: 0.20
+    sector: 0.20
+  # Score thresholds
+  hot_threshold: 0.6
+  warm_threshold: 0.3
+  cool_threshold: -0.3
+  cold_threshold: -0.6
+  # Top picks to report
+  top_n: 3
+
+# === Sector Scanning ===
+sectors:
+  enabled: true
+  scan_interval_minutes: 60  # Sector trends change slowly
+  etfs:
+    - XLK  # Technology
+    - SMH  # Semiconductors
+    - XLE  # Energy
+    - XLF  # Financials
+    - XLV  # Healthcare
+    - XLI  # Industrials
+    - XLB  # Materials
+    - XLU  # Utilities
+    - XLC  # Communication
+    - XLP  # Consumer Staples
+    - XLY  # Consumer Discretionary
+    - IBB  # Biotech
+    - ARKK # Innovation
+    - XLRE # Real Estate
 
 # === Paths ===
 paths:
   alert_log: "/home/wei/.openclaw/workspace/chanlunInvester/alerts.log"
   alert_state_file: "/home/wei/.openclaw/workspace/chanlunInvester/.alert_state.json"
+  sector_cache: "/home/wei/.hermes/cache/sector_scan.json"
