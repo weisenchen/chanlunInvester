@@ -1,123 +1,149 @@
-# 🚀 ChanLun (缠论) Intelligent Trading System
-**Master the Market with Precision. Powered by Rust + Python Hybrid Core.**
+# ChanLun Invester — 缠论智能监控系统
 
-<div align="center">
+**缠论 (ChanLun/Pen Theory) Intelligent Trading System**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Rust](https://img.shields.io/badge/Engine-Rust%20🦀-orange.svg)](https://www.rust-lang.org/)
-[![Python](https://img.shields.io/badge/Logic-Python%20🐍-blue.svg)](https://www.python.org/)
-[![Docker](https://img.shields.io/badge/Deployment-Docker%20🐳-blue.svg)](https://www.docker.com/)
+Real-time BSP (Buy/Sell Point) detection and alert system for US and Canadian stocks, powered by 缠论 Pen Theory.
 
-**The ultimate tool for Pen Theory (笔理论) practitioners. Automated. Real-time. Fail-safe.**
+## Quick Start
 
-[Quick Start](#-get-started-in-2-minutes) • [Sales Points](#-core-sales-points) • [Architecture](#-high-performance-architecture) • [Usage](#-how-to-use)
-
-</div>
-
----
-
-## 💎 Why choose this system?
-
-Most trading bots are either too slow to capture entry points or too rigid to implement complex theories like **ChanLun (缠论)**. 
-
-Our system bridges this gap:
-*   **Crushing Performance**: Rust-core handling heavy computations with microsecond latency.
-*   **Zero-Cost Data**: Built-in **Yahoo Finance** integration. No expensive API keys required.
-*   **Total Market Coverage**: US Stocks, ETFs (UVIX/SPY), Crypto (BTC), and Global Indices.
-*   **Battle-Tested Theory**: Strict implementation of New Pen (新笔), Line Segments, and Center Detection.
-
----
-
-## 🔥 Core Sales Points
-
-### 📡 1. Real-time Multi-Timeframe Monitoring
-Whether you are a scalper or a long-term investor, we've got you covered.
-*   **🚀 5m Scalper**: Capture the smallest fractal reversals for intra-day trades.
-*   **🎯 30m Swing**: Perfect for Identifying Type 1/2/3 buy points for multi-day moves.
-*   **📈 Daily Investor**: Monitor long-term "Center" (中枢) breakouts for portfolio growth.
-
-### 🔔 2. Intelligent Buy/Sell Alerts
-Don't stare at charts all day. The system detects **Divergence (背驰)** and triggers alerts once price criteria are met.
 ```bash
-# Monitor UVIX for a Type 1 Buy Point on 30m candles
-python launcher.py monitor UVIX --level 30m --alert telegram
+cd ~/.openclaw/workspace/chanlunInvester
+
+# Full scan (all configured symbols)
+python3 src/monitor_all.py
+
+# Run tests
+python3 tests/test_bsp_detection.py        # 8 BSP tests
+python3 tests/test_divergence_detection.py  # 11 divergence tests
 ```
 
-### 🦀 3. Hybrid Reliability
-If the high-speed Rust engine fails, the Python backup takes over **instantly**. Your monitoring never stops.
+## Architecture
 
----
-
-## 🚀 Get Started in 2 Minutes
-
-### The Docker Way (Easiest)
-Spin up the entire stack including the primary engine, backup, and health monitor:
-```bash
-docker-compose --profile backup --profile monitor up -d
-docker-compose logs -f
+```
+yfinance (free, no API key)
+    │
+    ▼
+Python Engine (src/trading_system/)
+    │
+    ├── FractalDetector (分型)
+    ├── PenCalculator (笔)
+    ├── SegmentCalculator (线段)
+    ├── CenterDetector (中枢)
+    ├── DivergenceDetector (背驰) — 3 methods
+    │   ├── Point method
+    │   ├── Area method (MACD柱 area)
+    │   └── DIF method (黄白线)
+    ├── BSP Detection (买卖点) — all 6 types
+    ├── Multi-Level Fusion (多级别联动)
+    └── Telegram Alert Delivery
 ```
 
-### The Developer Way
-```bash
-# 1. Setup Environment
-python3 -m venv venv && source venv/bin/activate
-pip install -r python-layer/requirements.txt && pip install -e python-layer
+## Project Structure
 
-# 2. Build & Analyze
-./scripts/build.sh
-python launcher.py analyze AAPL --level 30m
+```
+src/                          # All source code
+├── monitor_all.py            # Production BSP scanner + alert delivery
+├── trading_system/           # Core engine (11 modules)
+│   ├── kline.py              # K-line data structures
+│   ├── fractal.py            # Fractal detection
+│   ├── pen.py                # Pen calculation
+│   ├── segment.py            # Segment detection
+│   ├── center.py             # Center (中枢) detection
+│   ├── divergence.py         # Multi-method divergence detection
+│   ├── indicators.py         # MACD indicator
+│   ├── monitor.py            # Analysis pipeline
+│   ├── backtest.py           # Backtesting engine
+│   ├── telegram_bot.py       # Telegram bot
+│   └── weekly_analysis.py    # Weekly market analysis
+├── launcher.py               # Launcher
+└── premarket_report.py       # Premarket report script
+
+config/                       # Configuration
+├── config.yaml               # Symbols, thresholds, Telegram, fusion weights
+├── default.yaml
+├── live.yaml
+└── macd_params.yaml
+
+tests/                        # 19 unit tests
+├── test_bsp_detection.py     # 8 BSP tests (all 6 types + conflict + structure)
+├── test_divergence_detection.py  # 11 divergence tests
+└── ...
+
+docs/                         # Documentation and reports
+scripts/                      # Utility scripts
 ```
 
----
+## Features
 
-## 🛠️ Usage Scenarios
+### 6 BSP Types
 
-| Your Goal               | Suggested Command                              |
-| :---------------------- | :--------------------------------------------- |
-| **Quick Analysis**      | `python launcher.py analyze MSFT`              |
-| **Day Trading (5m)**    | `python launcher.py monitor UVIX --level 5m`   |
-| **Swing Trading (30m)** | `python launcher.py monitor TSLA --level 30m`  |
-| **Long-term (Daily)**   | `python launcher.py monitor ^GSPC --level day` |
-| **Learn the Logic**     | `python launcher.py examples --list`           |
+| Type | Condition |
+|------|-----------|
+| **Buy1** | Downtrend deviation at new low with weaker momentum |
+| **Sell1** | Uptrend deviation at new high with weaker momentum |
+| **Buy2** | First pullback after Buy1, does NOT break prior low |
+| **Sell2** | First bounce after Sell1, does NOT break prior high |
+| **Buy3** | Price breaks above ZG, FIRST pullback stays above ZG |
+| **Sell3** | Price breaks below ZD, FIRST bounce stays below ZD |
 
----
+### Multi-Method Divergence (Phase 2)
 
-## 🏗️ High-Performance Architecture
+- **Point method**: MACD histogram comparison at fractal points
+- **Area method**: MACD柱 area comparison between same-direction segments
+- **DIF method**: DIF 黄白线 comparison
+- **Zero-pullback check**: DIF/DEA回拉0轴 during center formation
+- **Segment divergence (区间套)**: Multi-level divergence between same-direction segments
 
-```mermaid
-graph LR
-    A[Yahoo Finance] --> B(Python Integration)
-    B --> C{Failover Coordinator}
-    C -->|Primary| D[Rust Engine 🦀]
-    C -->|Backup| E[Python Engine 🐍]
-    D --> F[gRPC Service]
-    E --> F
-    F --> G[Alerts/Terminal]
-```
+### Real-Time Alerts
 
-*   **Primary Engine**: Written in Rust for strict mathematical precision.
-*   **Backup Engine**: Written in Python for flexibility and rapid strategy iteration.
-*   **Failover**: Heartbeat-based monitoring ensures 99.9% uptime.
+- Scans every 15 minutes during market hours (Mon-Fri 9AM-4PM)
+- Telegram delivery via Hermes cron job
+- Anti-spam: 60-min silence + 0.3% min price change
+- Atomic state file (zero corruption risk)
 
----
+### Multi-Level Fusion
 
-## ⚙️ Effortless Configuration
-Fine-tune your strategy in `config/default.yaml`:
+Weighted scoring across timeframes:
+
+| Level | Direction Weight | Signal Weight |
+|-------|-----------------|---------------|
+| 5m    | 1.0             | 2.0           |
+| 30m   | 2.0             | 3.0           |
+| 1d    | 3.0             | 5.0           |
+| 1wk   | 4.0             | 8.0           |
+
+## Configuration
+
+Edit `config/config.yaml` to change symbols, thresholds, and Telegram settings:
+
 ```yaml
-pen:
-  definition: new_3kline     # Strict "New Pen" logic
-  strict_validation: true    # Filter out weak signals
-macd:
-  fast_period: 12            # Default 12/26/9 or your custom edge
+symbols:
+  - symbol: "SMR"
+    name: "NuScale Power"
+    levels: ["30m", "1d"]
+  - symbol: "TSLA"
+    name: "Tesla Inc"
+    levels: ["30m", "1d"]
+  # ... add any symbol
 ```
 
----
+## Tests
 
-## 🤝 Community & Support
-*   **MIT Licensed**: Free to use, modify, and distribute.
-*   **Built for Traders**: Created by traders who understand that every second counts.
+```bash
+cd ~/.openclaw/workspace/chanlunInvester
+python3 tests/test_bsp_detection.py           # 8 tests
+python3 tests/test_divergence_detection.py    # 11 tests
+```
 
-<div align="center">
-**Ready to trade smarter?**<br>
-[Star this Repo](https://github.com/weisenchen/chanlunInvester) ⭐ to stay updated!
-</div>
+All 19 tests pass with synthetic data and theory-compliant validation.
+
+## Dependencies
+
+- Python 3.10+
+- `yfinance` — free stock data (no API key)
+- `pyyaml` — config parsing
+- Standard library only for Telegram delivery (`urllib`)
+
+## Disclaimer
+
+⚠️ 仅供参考，不构成投资建议。缠论分析基于技术指标，市场有风险，投资需谨慎。
