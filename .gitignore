@@ -146,3 +146,4 @@ examples/uvix_analysis_result.json
 *.old
 tmp/
 temp/
+.alert_state.json
